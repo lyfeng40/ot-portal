@@ -336,7 +336,50 @@
 
 
         // --- 資料變數 ---
-        const quotes = [
+        // --- ☁️ 雲端讀取核心 (修改版：接收金句) ---
+
+        let todayQuoteFromServer = "載入中..."; // 暫存金句變數
+
+        function loadDataCloud() {
+            // 標題顯示讀取中
+            document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
+
+            fetch(API_URL + "?action=read&password=" + MY_SECRET_PASS)
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    if(res.data.appData) appData = res.data.appData;
+                    if(res.data.roomData) roomData = res.data.roomData;
+                    if(res.data.rosterData) rosterData = res.data.rosterData;
+                    if(res.data.calendarNote) calendarNote = res.data.calendarNote;
+                    
+                    // ★ 接收雲端傳來的今日金句
+                    if(res.data.todayQuote) todayQuoteFromServer = res.data.todayQuote;
+
+                    console.log("雲端資料同步完成");
+                } else {
+                    console.error("同步失敗: " + res.message);
+                }
+                updateUI(); 
+            })
+            .catch(err => {
+                console.error("連線錯誤", err);
+                updateUI();
+            });
+        }
+
+        function updateUI() {
+            // ★ 修改：顯示日期 + 雲端金句
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+            
+            // 如果雲端還沒傳回來，顯示預設；傳回來了就顯示雲端的
+            const displayQuote = todayQuoteFromServer === "載入中..." ? "日日是好日" : todayQuoteFromServer;
+            
+            document.getElementById('daily-quote').innerText = `${dateStr} — ${displayQuote}`;
+
+            renderCards();
+        }const quotes = [
             "「 休息，是為了走更長的路。 」",
             "「 只要活著，就會有好事發生。 」",
             "「 今天也要優雅地崩潰喔。 」",
@@ -690,6 +733,7 @@
 </body>
 
 </html>
+
 
 
 
