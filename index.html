@@ -198,12 +198,30 @@
         const roomOptions = ["空缺", "成癮", "學生", "急性", "ICF", "身心障礙鑑定", "桌遊", "志工", "其他"];
         const days = ["一", "二", "三", "四", "五"];
         
+        // ★★★ 修正點：這裡已恢復原本的連結 ★★★
         const defaultData = [
-            { id: 'meeting', title: '📅 常見會議連結', type: 'meeting', links: [], allowAdd: true },
+            { 
+                id: 'meeting', title: '📅 常見會議連結', type: 'meeting', 
+                links: [
+                    { name: '全院演講 1', url: 'http://10.1.66.102/', desc: '限院內' },
+                    { name: '全院演講 2', url: 'http://10.1.65.103/', desc: '限院內' },
+                    { name: '科部會 1', url: 'https://teams.microsoft.com/meet/42119309728124?p=eil55gYfm2J6vitzer', desc: 'Teams' },
+                    { name: '科部會 2', url: 'https://teams.microsoft.com/meet/4627805955372?p=y2GCT6SzB1Nc8egSeq', desc: 'Teams' }
+                ],
+                allowAdd: true 
+            },
             { id: 'calendar', title: '🔔 行事曆重點', type: 'calendar', specialContent: 'calendar-ui' },
             { id: 'room', title: '🏥 空間使用狀態', type: 'room', specialContent: 'room-ui' },
             { id: 'roster', title: '📋 排班表', type: 'custom', specialContent: 'roster-ui' },
-            { id: 'slowrun', title: '🏃 超慢跑活動', type: 'custom', links: [], allowAdd: true }
+            { 
+                id: 'slowrun', title: '🏃 超慢跑活動', type: 'custom', 
+                links: [
+                    { name: '數學版', url: 'https://lyfeng40.github.io/slowrun-activity/', desc: '認知' },
+                    { name: '生活題庫', url: 'https://lyfeng40.github.io/slowrun-activity/life-quiz', desc: '生活' },
+                    { name: '叫色版', url: 'https://lyfeng40.github.io/slowrun-activity/stroop', desc: '叫色' }
+                ],
+                allowAdd: true 
+            }
         ];
 
         let appData = defaultData; 
@@ -211,7 +229,7 @@
         let calendarNote = "";
         let rosterData = { leave: "", remark: "" };
         let todayQuoteFromServer = "載入中..."; 
-        let calendarEventsFromServer = "正在讀取行事曆..."; // ★ 新增行事曆變數
+        let calendarEventsFromServer = "正在讀取行事曆..."; 
 
         // --- ☁️ 雲端讀取 ---
         function loadDataCloud() {
@@ -220,13 +238,25 @@
             .then(res => res.json())
             .then(res => {
                 if(res.status === 'success') {
-                    if(res.data.appData) appData = res.data.appData;
+                    // ★ 修正邏輯：如果雲端回傳的連結是空的（因為之前的錯誤覆蓋），我們使用 defaultData
+                    if(res.data.appData) {
+                        // 檢查雲端的 meeting 連結是否為空，如果是，則保留 defaultData
+                        const cloudMeeting = res.data.appData.find(c => c.id === 'meeting');
+                        const defaultMeeting = defaultData.find(c => c.id === 'meeting');
+                        
+                        if (cloudMeeting && (!cloudMeeting.links || cloudMeeting.links.length === 0)) {
+                             // 如果雲端沒連結，就用預設的
+                             console.log("偵測到雲端連結遺失，使用預設值修復");
+                        } else {
+                            // 否則使用雲端的
+                            appData = res.data.appData;
+                        }
+                    }
+                    
                     if(res.data.roomData) roomData = res.data.roomData;
                     if(res.data.rosterData) rosterData = res.data.rosterData;
                     if(res.data.calendarNote) calendarNote = res.data.calendarNote;
                     if(res.data.todayQuote) todayQuoteFromServer = res.data.todayQuote;
-                    
-                    // ★ 接收自動抓取的行事曆資料
                     if(res.data.calendarEvents) calendarEventsFromServer = res.data.calendarEvents;
                     
                     console.log("雲端資料同步完成");
@@ -277,7 +307,6 @@
                     contentHtml = generateRoomUI();
                 } 
                 else if (card.specialContent === 'calendar-ui') {
-                    // ★ 行事曆 UI 更新：顯示自動抓取的資料 + 手動備註
                     contentHtml = `
                         <div style="background:#FFF9C4; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #FBC02D;">
                             <strong style="color:#AF601A; display:block; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:5px;">
