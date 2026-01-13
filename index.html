@@ -440,9 +440,14 @@
             renderCards();
         }
 
-        function renderCards() {
+       function renderCards() {
             const container = document.getElementById('cardContainer');
             container.innerHTML = '';
+
+            // ★ 關鍵新增：每次重新渲染時，也順便更新 Modal 裡面的文字，確保資料一致
+            if(document.getElementById('leave-display-text')) {
+                document.getElementById('leave-display-text').innerText = rosterData.leave || "無";
+            }
 
             appData.forEach(card => {
                 const cardDiv = document.createElement('div');
@@ -469,9 +474,16 @@
                     `;
                 }
                 else if (card.specialContent === 'roster-ui') {
+                    // ★ 注意下面這一段 input 的寫法 ★
+                    // oninput 事件裡，我多加了一句：document.getElementById('leave-display-text').innerText = this.value
+                    // 這就是「即時連動」的魔法
                     contentHtml = `
                         <label class="input-label">🚑 今日請假人員</label>
-                        <input type="text" class="modal-input" style="margin:0;" value="${rosterData.leave}" onchange="rosterData.leave=this.value; saveRoster()" onclick="event.stopPropagation()" placeholder="輸入姓名...">
+                        <input type="text" class="modal-input" style="margin:0;" 
+                               value="${rosterData.leave}" 
+                               oninput="rosterData.leave=this.value; saveRoster(); document.getElementById('leave-display-text').innerText = this.value || '無';" 
+                               onclick="event.stopPropagation()" 
+                               placeholder="輸入姓名 (例如: 王大明)">
                         
                         <div class="btn" onclick="event.stopPropagation(); document.getElementById('roster-modal').style.display='flex'" style="margin-top:10px; border-left:4px solid var(--forest-green);">
                             <div>本月排班表<small>點擊展開詳細圖表</small></div>
@@ -515,7 +527,6 @@
             });
             updateUnusedDisplay();
         }
-
         // --- 空間管理 UI ---
         function generateRoomUI() {
             const mkSel = (roomKey, dayIdx, timeKey) => {
@@ -664,3 +675,4 @@
 </body>
 
 </html>
+
