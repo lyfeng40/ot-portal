@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>精神醫學部職能治療入口網</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* V5 宮崎駿配色 - 職能森之宮 */
+            --bg-paper: #F2EAD3;
+            --forest-green: #2F4F4F;
+            --twilight-blue: #4A6C8C;
+            --brick-red: #C05546;
+            --warm-light: #F9E79F;
+            --ink-black: #2C3E50;
+            --shadow-retro: 4px 4px 0px rgba(47, 79, 79, 0.2);
+            --radius: 8px;
+            --empty-slot: #E8F5E9;
+            --busy-slot: #FFEBEE;
+        }
+
+        /* 基礎設定 & 噪點 */
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-paper);
+            color: var(--ink-black);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        /* === 安全鎖定畫面 Styles === */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--forest-green);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999; transition: opacity 0.5s;
+        }
+        .login-box {
+            background: #FDFBF7; padding: 40px; border-radius: 12px;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 80%; max-width: 300px;
+        }
+        .login-title {
+            font-family: 'Noto Serif TC', serif; font-size: 1.5rem;
+            color: var(--forest-green); margin-bottom: 20px;
+        }
+        .login-input {
+            width: 100%; padding: 12px; font-size: 1.2rem; text-align: center;
+            border: 2px solid #ddd; border-radius: 8px; margin-bottom: 20px;
+            letter-spacing: 5px; box-sizing: border-box;
+        }
+        .login-btn {
+            background: var(--brick-red); color: white; border: none;
+            padding: 10px 30px; font-size: 1rem; border-radius: 6px;
+            cursor: pointer; width: 100%;
+        }
+        .login-btn:hover { background: #A93226; }
+        .error-msg { color: #C62828; margin-top: 15px; font-size: 0.9rem; display: none; }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 30px;
+        }
+
+        .header h1 {
+            font-family: 'Noto Serif TC', serif;
+            margin: 0;
+            font-size: 2rem;
+            color: var(--forest-green);
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.5);
+            letter-spacing: 3px;
+        }
+
+        .header p {
+            margin: 15px 0 0;
+            font-size: 1rem;
+            color: #6B7A8F;
+            font-style: italic;
+            font-weight: 500;
+        }
+
+        /* 網格佈局 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+
+        /* 卡片設計 */
+        .card {
+            background: #FDFBF7;
+            border: 2px solid var(--forest-green);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-retro);
+            transition: transform 0.2s;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card:hover { transform: translate(-2px, -2px); }
+
+        .card-header {
+            background-color: var(--forest-green);
+            color: #FDFBF7;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--forest-green);
+        }
+
+        .card-title { font-family: 'Noto Serif TC', serif; font-size: 1.15rem; font-weight: 700; }
+        .toggle-icon { transition: transform 0.3s; }
+        .card.active .toggle-icon { transform: rotate(180deg); }
+
+        /* 卡片配色 */
+        .card[data-type="meeting"] .card-header { background-color: var(--forest-green); }
+        .card[data-type="calendar"] .card-header { background-color: var(--twilight-blue); }
+        .card[data-type="room"] .card-header { background-color: var(--brick-red); }
+        .card[data-type="custom"] .card-header { background-color: #8D6E63; }
+
+        /* 內容區 */
+        .card-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, opacity 0.3s ease;
+            background-color: #FDFBF7;
+            opacity: 0;
+        }
+        .card.active .card-content { opacity: 1; }
+        .content-inner { padding: 20px; }
+
+        /* 按鈕與連結 */
+        .btn {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 15px; margin-bottom: 10px; background: #FFF;
+            border: 1px solid #D1D1D1; border-radius: 6px; color: var(--ink-black);
+            text-decoration: none; transition: background 0.2s;
+        }
+        .btn:hover { background-color: #F4F4F4; }
+        .btn small { color: #888; font-size: 0.8rem; display: block; }
+        .badge { font-size: 0.7rem; padding: 2px 6px; background: #EAEAEA; border-radius: 4px; color: #555; }
+
+        /* 卡片內的新增按鈕 */
+        .inline-add-btn {
+            display: flex; justify-content: center; align-items: center;
+            padding: 10px; margin-top: 15px; border: 2px dashed #CCC;
+            border-radius: 6px; color: #888; cursor: pointer;
+            transition: all 0.2s; font-size: 0.9rem;
+        }
+        .inline-add-btn:hover {
+            border-color: var(--forest-green); color: var(--forest-green); background: #F9F9F9;
+        }
+
+        /* 懸浮按鈕 (FAB) */
+        .fab-btn {
+            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px;
+            background: var(--brick-red); color: white; border-radius: 50%;
+            border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-size: 30px;
+            cursor: pointer; z-index: 100; transition: transform 0.2s;
+        }
+        .fab-btn:hover { transform: scale(1.1) rotate(90deg); }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 62, 80, 0.7); backdrop-filter: blur(2px);
+            justify-content: center; align-items: center; z-index: 1001;
+        }
+        .modal-content {
+            background: #FDFBF7; padding: 25px; border-radius: 12px; width: 320px;
+            border: 2px solid var(--forest-green); text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .modal-btn { padding: 8px 20px; background: var(--forest-green); color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+
+        /* 空間表格樣式 */
+        .room-section { margin-bottom: 25px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;}
+        .room-section h3 { margin: 0 0 10px 0; color: var(--brick-red); font-size: 1rem; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 40px repeat(5, 1fr);
+            gap: 5px; font-size: 0.8rem; align-items: center;
+        }
+        .schedule-header { text-align: center; font-weight: bold; color: #666; padding-bottom: 5px;}
+        .schedule-label { font-weight: bold; color: var(--forest-green); }
+        .schedule-select {
+            width: 100%; padding: 2px; border: 1px solid #ccc; border-radius: 3px;
+            font-size: 0.75rem; background: white;
+        }
+
+        .unused-display-area {
+            margin-top: 15px; padding: 10px; background: var(--empty-slot);
+            border: 1px dashed var(--forest-green); border-radius: 6px;
+            font-size: 0.85rem; color: var(--forest-green);
+        }
+        .unused-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+        .unused-tag { background: white; border: 1px solid #A5D6A7; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+
+        /* 備註欄共用樣式 */
+        .remark-area {
+            width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #D1D1D1;
+            border-radius: 6px; font-family: inherit; resize: vertical; box-sizing: border-box;
+            background: #FFF; min-height: 60px;
+        }
+        .input-label { font-size: 0.85rem; color: #888; display: block; margin-top: 10px; margin-bottom: 4px; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <div class="login-title">🔒 部門限用</div>
+            <input type="password" id="site-password" class="login-input" placeholder="輸入密碼">
+            <button class="login-btn" onclick="checkPassword()">進入入口網</button>
+            <div id="login-error" class="error-msg">密碼錯誤，請重新輸入</div>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>精神醫學部職能治療入口網</h1>
+        <p id="daily-quote">Loading...</p> 
+    </div>
+
+    <div class="grid" id="cardContainer">
+        </div>
+
+    <button class="fab-btn" onclick="openAddModal()">＋</button>
+
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="color:var(--forest-green); margin-top:0;">新增內容</h3>
+            <div id="category-selector-group">
+                <select id="new-card-select" class="modal-input"></select>
+            </div>
+            <div id="input-new-card-title" style="display:none;">
+                <input type="text" id="new-card-title" placeholder="輸入新卡片標題" class="modal-input">
+            </div>
+            <input type="text" id="new-link-name" placeholder="連結名稱 (例如: Zoom會議)" class="modal-input">
+            <input type="text" id="new-link-url" placeholder="網址 (例如: https://...)" class="modal-input">
+            <input type="text" id="new-link-desc" placeholder="備註 (選填)" class="modal-input">
+            <div style="display:flex; justify-content: space-between;">
+                <button class="modal-btn" style="background:#888;" onclick="closeAddModal()">取消</button>
+                <button class="modal-btn" onclick="saveNewItem()">確定新增</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="roster-modal" class="modal">
+        <div class="modal-content" style="max-width:500px; width:90%;">
+            <span style="float:right; cursor:pointer; font-size:1.5rem;" onclick="document.getElementById('roster-modal').style.display='none'">&times;</span>
+            <h2 style="color:var(--forest-green);">排班表詳情</h2>
+            <div style="background:#eee; height:300px; display:flex; align-items:center; justify-content:center; border-radius:8px;">
+                [ 這裡顯示排班表圖片/PDF ]
+            </div>
+        </div>
+    </div>
+
+<script>
+        // ==========================================
+        // ☁️ 雲端設定區
+        // 請將下方網址換成你刚刚部署取得的 Apps Script 網址
+        const API_URL = "https://script.google.com/macros/s/AKfycbw6HotMwrrkXmYJM1yJNUZonTABHIeEv03odAsN8YS4EgCosc31mUFHHfURVJJKTc7x/exec";
+        
+        // 你的通關密碼 (必須跟 Google Script 裡設的一樣)
+        const MY_SECRET_PASS = "8888"; 
+        // ==========================================
+
+        // --- 安全驗證邏輯 ---
+        const isLogged = sessionStorage.getItem("ot_logged_in");
+        if(isLogged === "true") {
+            document.getElementById("login-overlay").style.display = "none";
+            // 登入過就直接讀取雲端資料
+            loadDataCloud(); 
+        }
+
+        function checkPassword() {
+            const input = document.getElementById("site-password").value;
+            const errorMsg = document.getElementById("login-error");
+            
+            if (input === MY_SECRET_PASS) {
+                document.getElementById("login-overlay").style.opacity = "0";
+                setTimeout(() => {
+                    document.getElementById("login-overlay").style.display = "none";
+                }, 500);
+                sessionStorage.setItem("ot_logged_in", "true");
+                
+                // 密碼正確後，開始讀取雲端資料
+                loadDataCloud();
+
+            } else {
+                errorMsg.style.display = "block";
+                document.getElementById("site-password").value = "";
+                document.querySelector('.login-box').style.animation = "shake 0.3s";
+                setTimeout(() => document.querySelector('.login-box').style.animation = "", 300);
+            }
+        }
+        document.getElementById("site-password").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") checkPassword();
+        });
+
+
+        // --- 資料變數 ---
+        const quotes = [
+            "「 休息，是為了走更長的路。 」",
+            "「 只要活著，就會有好事發生。 」",
+            "「 今天也要優雅地崩潰喔。 」",
+            "「 薪水是精神賠償金。 」",
+            "「 夢想很豐滿，現實很骨感。 」",
+            "「 逃避雖然可恥，但非常有用。 」",
+            "「 你已經做得很好了。 」"
+        ];
+        const roomOptions = ["空缺", "成癮", "學生", "急性", "ICF", "身心障礙鑑定", "其他"];
+        const days = ["一", "二", "三", "四", "五"];
+        
+        // 預設資料 (如果雲端是空的，就用這個)
+        const defaultData = [
+            { 
+                id: 'meeting', title: '📅 常見會議連結', type: 'meeting', 
+                links: [
+                    { name: '全院演講 1', url: 'http://10.1.66.102/', desc: '限院內' },
+                    { name: '科部會', url: 'https://teams.microsoft.com/', desc: 'Teams' }
+                ],
+                allowAdd: true 
+            },
+            { id: 'calendar', title: '🔔 行事曆重點', type: 'calendar', specialContent: 'calendar-ui' },
+            { id: 'room', title: '🏥 空間使用狀態', type: 'room', specialContent: 'room-ui' },
+            { id: 'roster', title: '📋 排班表', type: 'custom', specialContent: 'roster-ui' },
+            { 
+                id: 'slowrun', title: '🏃 超慢跑活動', type: 'custom', 
+                links: [
+                    { name: '數學版', url: 'https://lyfeng40.github.io/slowrun-activity/', desc: '認知' },
+                    { name: '生活題庫', url: 'https://lyfeng40.github.io/slowrun-activity/life-quiz', desc: '生活' },
+                    { name: '叫色版', url: 'https://lyfeng40.github.io/slowrun-activity/stroop', desc: '叫色' }
+                ],
+                allowAdd: true 
+            }
+        ];
+
+        let appData = defaultData; // 先載入預設，避免畫面空白
+        let roomData = {
+            assess: Array(5).fill(null).map(() => ({ am: "空缺", pm: "空缺" })),
+            room2: Array(5).fill(null).map(() => ({ am: "空缺", pm: "空缺" })),
+            remark: ""
+        };
+        let calendarNote = "";
+        let rosterData = { leave: "", remark: "" };
+
+        // --- ☁️ 雲端讀取與儲存核心 ---
+
+        function loadDataCloud() {
+            // 顯示讀取中狀態 (可選：在標題旁顯示 Loading...)
+            document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
+
+            fetch(API_URL + "?action=read&password=" + MY_SECRET_PASS)
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    if(res.data.appData) appData = res.data.appData;
+                    if(res.data.roomData) roomData = res.data.roomData;
+                    if(res.data.rosterData) rosterData = res.data.rosterData;
+                    if(res.data.calendarNote) calendarNote = res.data.calendarNote;
+                    console.log("雲端資料同步完成");
+                } else {
+                    console.error("同步失敗: " + res.message);
+                }
+                updateUI(); // 讀取完畢刷新畫面
+            })
+            .catch(err => {
+                console.error("連線錯誤", err);
+                updateUI(); // 即使錯誤也刷新，至少顯示預設值
+            });
+        }
+
+        function sendToCloud(type, dataObj) {
+            // 使用 sendBeacon 或 fetch post
+            const payload = JSON.stringify(dataObj);
+            // 這裡為了簡單使用 fetch POST text/plain 避免 CORS preflight 問題
+            fetch(API_URL + "?password=" + MY_SECRET_PASS + "&action=write&type=" + type, {
+                method: "POST",
+                body: payload
+            }).then(() => console.log(type + " Saved to Cloud"));
+        }
+
+        // 修改原本的存檔函式，改為上傳雲端
+        function saveData() { 
+            sendToCloud('main', appData); 
+            renderCards(); 
+        }
+        function saveRoom() { 
+            sendToCloud('room', roomData); 
+            updateUnusedDisplay(); 
+        }
+        function saveCal(val) { 
+            calendarNote = val; 
+            sendToCloud('cal', val); 
+        }
+        function saveRoster() { 
+            sendToCloud('roster', rosterData); 
+        }
+
+        // --- 畫面渲染與邏輯 (維持不變) ---
+        
+        function updateUI() {
+            // 更新日期 + 語錄
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('daily-quote').innerText = `${dateStr} — ${randomQuote}`;
+
+            renderCards();
+        }
+
+        function renderCards() {
+            const container = document.getElementById('cardContainer');
+            container.innerHTML = '';
+
+            appData.forEach(card => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.setAttribute('data-type', card.type);
+                cardDiv.onclick = (e) => toggleCard(cardDiv, e);
+
+                let contentHtml = '';
+
+                if (card.specialContent === 'room-ui') {
+                    contentHtml = generateRoomUI();
+                } 
+                else if (card.specialContent === 'calendar-ui') {
+                    contentHtml = `
+                        <div style="background:#FFF9C4; padding:15px; border-radius:4px; margin-bottom:15px;">
+                            <strong style="color:#AF601A">🔥 今日重點</strong>
+                            <div style="margin-top:5px;">09:00 個案研討會<br>14:00 新進人員訓練</div>
+                        </div>
+                        <a href="https://calendar.google.com/calendar/embed?src=chimeiotr%40gmail.com&ctz=Asia%2FTaipei" target="_blank" class="btn" style="border-left:4px solid var(--twilight-blue);">
+                            <div>查看完整月曆<small>Google Calendar</small></div>
+                        </a>
+                        <label class="input-label">📝 行事曆備註 (自動同步)</label>
+                        <textarea class="remark-area" onchange="saveCal(this.value)" onclick="event.stopPropagation()">${calendarNote}</textarea>
+                    `;
+                }
+                else if (card.specialContent === 'roster-ui') {
+                    contentHtml = `
+                        <label class="input-label">🚑 今日請假人員</label>
+                        <input type="text" class="modal-input" style="margin:0;" value="${rosterData.leave}" onchange="rosterData.leave=this.value; saveRoster()" onclick="event.stopPropagation()" placeholder="輸入姓名...">
+                        
+                        <div class="btn" onclick="event.stopPropagation(); document.getElementById('roster-modal').style.display='flex'" style="margin-top:10px; border-left:4px solid var(--forest-green);">
+                            <div>本月排班表<small>點擊展開詳細圖表</small></div>
+                        </div>
+                        
+                        <label class="input-label">📝 排班備註 (自動同步)</label>
+                        <textarea class="remark-area" onchange="rosterData.remark=this.value; saveRoster()" onclick="event.stopPropagation()">${rosterData.remark}</textarea>
+                    `;
+                }
+
+                if (card.links) {
+                    card.links.forEach(link => {
+                        contentHtml += `
+                        <a href="${link.url}" target="_blank" class="btn">
+                            <div>${link.name}<small>${link.desc || ''}</small></div>
+                            <span class="badge">GO</span>
+                        </a>`;
+                    });
+                }
+
+                if (card.allowAdd) {
+                    contentHtml += `
+                        <div class="inline-add-btn" onclick="event.stopPropagation(); openAddModal('${card.id}')">
+                            + 新增連結至此卡片
+                        </div>
+                    `;
+                }
+
+                cardDiv.innerHTML = `
+                    <div class="card-header">
+                        <span class="card-title">${card.title}</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="content-inner">
+                            ${contentHtml}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(cardDiv);
+            });
+            updateUnusedDisplay();
+        }
+
+        // --- 空間管理 UI ---
+        function generateRoomUI() {
+            const mkSel = (roomKey, dayIdx, timeKey) => {
+                let currentVal = roomData[roomKey][dayIdx][timeKey];
+                let opts = roomOptions.map(o => `<option value="${o}" ${o===currentVal?'selected':''}>${o}</option>`).join('');
+                // 改用 onchange (選完才上傳，比較省流量)
+                return `<select class="schedule-select" onchange="updateRoomData('${roomKey}', ${dayIdx}, '${timeKey}', this.value)">${opts}</select>`;
+            };
+
+            const mkRows = (roomKey) => {
+                let amRow = `<div class="schedule-label">上午</div>`;
+                let pmRow = `<div class="schedule-label">下午</div>`;
+                days.forEach((d, i) => {
+                    amRow += `<div>${mkSel(roomKey, i, 'am')}</div>`;
+                    pmRow += `<div>${mkSel(roomKey, i, 'pm')}</div>`;
+                });
+                return amRow + pmRow;
+            };
+
+            const headerRow = `<div></div>` + days.map(d => `<div class="schedule-header">${d}</div>`).join('');
+
+            return `
+                <div class="unused-display-area" id="unused-list-display">計算中...</div>
+                <div class="room-section" onclick="event.stopPropagation()">
+                    <h3>🩺 評估室</h3>
+                    <div class="schedule-grid">${headerRow}${mkRows('assess')}</div>
+                </div>
+                <div class="room-section" onclick="event.stopPropagation()">
+                    <h3>🏋️ 活動室 II</h3>
+                    <div class="schedule-grid">${headerRow}${mkRows('room2')}</div>
+                </div>
+                <label class="input-label">📝 空間備註</label>
+                <textarea class="remark-area" onchange="roomData.remark=this.value; saveRoom()" onclick="event.stopPropagation()">${roomData.remark}</textarea>
+            `;
+        }
+
+        window.updateRoomData = function(roomKey, dayIdx, timeKey, value) {
+            roomData[roomKey][dayIdx][timeKey] = value;
+            saveRoom(); // 儲存並更新
+        };
+
+        function updateUnusedDisplay() {
+            const disp = document.getElementById('unused-list-display');
+            if(!disp) return;
+            let emptyList = [];
+            days.forEach((day, i) => {
+                if(roomData.assess[i].am === '空缺') emptyList.push(`評估室(週${day}上)`);
+                if(roomData.assess[i].pm === '空缺') emptyList.push(`評估室(週${day}下)`);
+                if(roomData.room2[i].am === '空缺') emptyList.push(`活動室II(週${day}上)`);
+                if(roomData.room2[i].pm === '空缺') emptyList.push(`活動室II(週${day}下)`);
+            });
+            if (emptyList.length > 0) {
+                disp.innerHTML = `<strong>🟢 本週空閒時段：</strong><div class="unused-list">${emptyList.map(t => `<span class="unused-tag">${t}</span>`).join('')}</div>`;
+                disp.style.background = "var(--empty-slot)";
+                disp.style.color = "var(--forest-green)";
+            } else {
+                disp.innerHTML = `<strong>🔴 本週已全滿</strong>`;
+                disp.style.background = "var(--busy-slot)";
+                disp.style.color = "#C62828";
+            }
+        }
+
+        // --- 新增與互動功能 ---
+        window.openAddModal = function(targetId = null) {
+            const modal = document.getElementById('add-modal');
+            const selectGroup = document.getElementById('category-selector-group');
+            const select = document.getElementById('new-card-select');
+            updateSelectOptions();
+            if (targetId) {
+                selectGroup.style.display = 'none';
+                select.value = targetId;
+            } else {
+                selectGroup.style.display = 'block';
+                select.value = 'new_card';
+            }
+            select.dispatchEvent(new Event('change'));
+            modal.style.display = 'flex';
+        }
+        window.closeAddModal = function() { document.getElementById('add-modal').style.display = 'none'; }
+
+        document.getElementById('new-card-select').addEventListener('change', function() {
+            document.getElementById('input-new-card-title').style.display = (this.value === 'new_card') ? 'block' : 'none';
+        });
+
+        function updateSelectOptions() {
+            const select = document.getElementById('new-card-select');
+            select.innerHTML = '<option value="new_card">✨ 建立一張全新卡片</option>';
+            appData.forEach(card => {
+                if (!['room','calendar','roster'].includes(card.specialContent)) {
+                    const opt = document.createElement('option');
+                    opt.value = card.id;
+                    opt.text = `加入至「${card.title}」`;
+                    select.insertBefore(opt, select.firstChild);
+                }
+            });
+        }
+
+        window.saveNewItem = function() {
+            const selectVal = document.getElementById('new-card-select').value;
+            const name = document.getElementById('new-link-name').value;
+            const url = document.getElementById('new-link-url').value;
+            const desc = document.getElementById('new-link-desc').value;
+            if(!name || !url) { alert('請至少輸入名稱和網址'); return; }
+
+            if (selectVal === 'new_card') {
+                const title = document.getElementById('new-card-title').value || '新分類';
+                appData.push({
+                    id: 'custom_' + Date.now(), title: title, type: 'custom',
+                    links: [{ name, url, desc }], allowAdd: true
+                });
+            } else {
+                const card = appData.find(c => c.id === selectVal);
+                if (card) {
+                    if (!card.links) card.links = [];
+                    card.links.push({ name, url, desc });
+                }
+            }
+            saveData();
+            closeAddModal();
+            document.getElementById('new-link-name').value = '';
+            document.getElementById('new-link-url').value = '';
+            document.getElementById('new-link-desc').value = '';
+        }
+
+        function toggleCard(card, event) {
+            if(event.target.closest('select') || event.target.closest('textarea') || 
+               event.target.closest('input') || event.target.closest('a') || 
+               event.target.closest('.inline-add-btn') || event.target.closest('.room-section')) {
+                return;
+            }
+            const content = card.querySelector('.card-content');
+            const isActive = card.classList.contains('active');
+            if (!isActive) {
+                card.classList.add('active');
+                content.style.maxHeight = content.scrollHeight + 800 + "px";
+            } else {
+                card.classList.remove('active');
+                content.style.maxHeight = null;
+            }
+        }
+
+        // 注意：這裡不呼叫 loadData()，而是由密碼檢查通過後呼叫 loadDataCloud()
+        updateUI(); 
+
+    </script>
+</body>
+</html>
