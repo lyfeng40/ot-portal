@@ -267,13 +267,21 @@
         </div>
     </div>
 
-    <div id="roster-modal" class="modal">
-        <div class="modal-content" style="max-width:500px; width:90%;">
+<div id="roster-modal" class="modal">
+        <div class="modal-content" style="max-width:600px; width:95%; max-height:90vh; overflow-y:auto;">
             <span style="float:right; cursor:pointer; font-size:1.5rem;" onclick="document.getElementById('roster-modal').style.display='none'">&times;</span>
-            <h2 style="color:var(--forest-green);">排班表詳情</h2>
-            <div style="background:#eee; height:300px; display:flex; align-items:center; justify-content:center; border-radius:8px;">
-                [ 這裡顯示排班表圖片/PDF ]
+            
+            <h2 style="color:var(--forest-green); margin-top:0;">本月排班表</h2>
+            
+            <div style="background:#FFEBEE; color:#C62828; padding:10px; border-radius:6px; margin-bottom:15px; font-weight:bold; border:1px solid #EF9A9A;">
+                🚑 今日請假：<span id="leave-display-text">載入中...</span>
             </div>
+
+            <div style="text-align:center;">
+                <img src="./roster.jpg" style="width:100%; height:auto; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1);" onerror="this.style.display='none'; this.parentElement.innerHTML='[尚未上傳 roster.jpg]'">
+            </div>
+            
+            <p style="color:#888; font-size:0.8rem; margin-top:10px;">* 如需縮放請使用手指開合</p>
         </div>
     </div>
 
@@ -654,4 +662,5 @@
 
     </script>
 </body>
+
 </html>
