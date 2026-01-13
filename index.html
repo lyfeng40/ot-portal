@@ -345,7 +345,7 @@
             "「 逃避雖然可恥，但非常有用。 」",
             "「 你已經做得很好了。 」"
         ];
-        const roomOptions = ["空缺", "成癮", "學生", "急性", "ICF", "身心障礙鑑定", "其他"];
+        const roomOptions = ["空缺", "成癮", "學生", "急性", "ICF", "身心障礙鑑定", "桌遊", "志工", "其他"];
         const days = ["一", "二", "三", "四", "五"];
         
         // 預設資料 (如果雲端是空的，就用這個)
@@ -354,7 +354,9 @@
                 id: 'meeting', title: '📅 常見會議連結', type: 'meeting', 
                 links: [
                     { name: '全院演講 1', url: 'http://10.1.66.102/', desc: '限院內' },
-                    { name: '科部會', url: 'https://teams.microsoft.com/', desc: 'Teams' }
+                    { name: '全院演講 2', url: 'http://10.1.65.103/', desc: '限院內' },
+                    { name: '科部會 1', url: 'https://teams.microsoft.com/meet/42119309728124?p=eil55gYfm2J6vitzer', desc: 'Teams' }
+                    { name: '科部會 2', url: 'https://teams.microsoft.com/meet/4627805955372?p=y2GCT6SzB1Nc8egSeq', desc: 'Teams' }
                 ],
                 allowAdd: true 
             },
@@ -466,17 +468,24 @@
                 if (card.specialContent === 'room-ui') {
                     contentHtml = generateRoomUI();
                 } 
-                else if (card.specialContent === 'calendar-ui') {
+            else if (card.specialContent === 'calendar-ui') {
+                    // 修改版：將黃色區塊變成可編輯的同步佈告欄
+                    // 我們直接把 calendarNote (行事曆備註) 顯示在黃色框框裡
                     contentHtml = `
-                        <div style="background:#FFF9C4; padding:15px; border-radius:4px; margin-bottom:15px;">
-                            <strong style="color:#AF601A">🔥 今日重點</strong>
-                            <div style="margin-top:5px;">09:00 個案研討會<br>14:00 新進人員訓練</div>
+                        <div style="background:#FFF9C4; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #FBC02D;">
+                            <strong style="color:#AF601A; display:block; margin-bottom:5px;">🔥 今日重點 / 公告</strong>
+                            
+                            <textarea style="width:100%; background:transparent; border:none; resize:none; font-family:inherit; font-size:0.95rem; line-height:1.5; height:80px; outline:none;" 
+                                placeholder="點擊此處輸入今日重點..." 
+                                onchange="saveCal(this.value)" 
+                                onclick="event.stopPropagation()">${calendarNote}</textarea>
                         </div>
+
                         <a href="https://calendar.google.com/calendar/embed?src=chimeiotr%40gmail.com&ctz=Asia%2FTaipei" target="_blank" class="btn" style="border-left:4px solid var(--twilight-blue);">
                             <div>查看完整月曆<small>Google Calendar</small></div>
                         </a>
-                        <label class="input-label">📝 行事曆備註 (自動同步)</label>
-                        <textarea class="remark-area" onchange="saveCal(this.value)" onclick="event.stopPropagation()">${calendarNote}</textarea>
+                        
+                        <p style="font-size:0.8rem; color:#888; text-align:center;">* 上方黃色區域輸入文字後，點擊旁邊即可自動儲存同步</p>
                     `;
                 }
                 else if (card.specialContent === 'roster-ui') {
@@ -681,5 +690,6 @@
 </body>
 
 </html>
+
 
 
