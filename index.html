@@ -273,7 +273,7 @@
         </div>
     </div>
 
-<div id="roster-modal" class="modal">
+    <div id="roster-modal" class="modal">
         <div class="modal-content" style="max-width:600px; width:95%; max-height:90vh; overflow-y:auto;">
             <span style="float:right; cursor:pointer; font-size:1.5rem;" onclick="document.getElementById('roster-modal').style.display='none'">&times;</span>
             
@@ -294,10 +294,7 @@
 <script>
         // ==========================================
         // ☁️ 雲端設定區
-        // 請將下方網址換成你刚刚部署取得的 Apps Script 網址
         const API_URL = "https://script.google.com/macros/s/AKfycbw6HotMwrrkXmYJM1yJNUZonTABHIeEv03odAsN8YS4EgCosc31mUFHHfURVJJKTc7x/exec";
-        
-        // 你的通關密碼 (必須跟 Google Script 裡設的一樣)
         const MY_SECRET_PASS = "8888"; 
         // ==========================================
 
@@ -305,7 +302,6 @@
         const isLogged = sessionStorage.getItem("ot_logged_in");
         if(isLogged === "true") {
             document.getElementById("login-overlay").style.display = "none";
-            // 登入過就直接讀取雲端資料
             loadDataCloud(); 
         }
 
@@ -319,10 +315,7 @@
                     document.getElementById("login-overlay").style.display = "none";
                 }, 500);
                 sessionStorage.setItem("ot_logged_in", "true");
-                
-                // 密碼正確後，開始讀取雲端資料
                 loadDataCloud();
-
             } else {
                 errorMsg.style.display = "block";
                 document.getElementById("site-password").value = "";
@@ -336,69 +329,17 @@
 
 
         // --- 資料變數 ---
-        // --- ☁️ 雲端讀取核心 (修改版：接收金句) ---
-
-        let todayQuoteFromServer = "載入中..."; // 暫存金句變數
-
-        function loadDataCloud() {
-            // 標題顯示讀取中
-            document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
-
-            fetch(API_URL + "?action=read&password=" + MY_SECRET_PASS)
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    if(res.data.appData) appData = res.data.appData;
-                    if(res.data.roomData) roomData = res.data.roomData;
-                    if(res.data.rosterData) rosterData = res.data.rosterData;
-                    if(res.data.calendarNote) calendarNote = res.data.calendarNote;
-                    
-                    // ★ 接收雲端傳來的今日金句
-                    if(res.data.todayQuote) todayQuoteFromServer = res.data.todayQuote;
-
-                    console.log("雲端資料同步完成");
-                } else {
-                    console.error("同步失敗: " + res.message);
-                }
-                updateUI(); 
-            })
-            .catch(err => {
-                console.error("連線錯誤", err);
-                updateUI();
-            });
-        }
-
-        function updateUI() {
-            // ★ 修改：顯示日期 + 雲端金句
-            const today = new Date();
-            const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
-            
-            // 如果雲端還沒傳回來，顯示預設；傳回來了就顯示雲端的
-            const displayQuote = todayQuoteFromServer === "載入中..." ? "日日是好日" : todayQuoteFromServer;
-            
-            document.getElementById('daily-quote').innerText = `${dateStr} — ${displayQuote}`;
-
-            renderCards();
-        }const quotes = [
-            "「 休息，是為了走更長的路。 」",
-            "「 只要活著，就會有好事發生。 」",
-            "「 今天也要優雅地崩潰喔。 」",
-            "「 薪水是精神賠償金。 」",
-            "「 夢想很豐滿，現實很骨感。 」",
-            "「 逃避雖然可恥，但非常有用。 」",
-            "「 你已經做得很好了。 」"
-        ];
         const roomOptions = ["空缺", "成癮", "學生", "急性", "ICF", "身心障礙鑑定", "桌遊", "志工", "其他"];
         const days = ["一", "二", "三", "四", "五"];
         
-        // 預設資料 (如果雲端是空的，就用這個)
+        // 預設資料
         const defaultData = [
             { 
                 id: 'meeting', title: '📅 常見會議連結', type: 'meeting', 
                 links: [
                     { name: '全院演講 1', url: 'http://10.1.66.102/', desc: '限院內' },
                     { name: '全院演講 2', url: 'http://10.1.65.103/', desc: '限院內' },
-                    { name: '科部會 1', url: 'https://teams.microsoft.com/meet/42119309728124?p=eil55gYfm2J6vitzer', desc: 'Teams' }
+                    { name: '科部會 1', url: 'https://teams.microsoft.com/meet/42119309728124?p=eil55gYfm2J6vitzer', desc: 'Teams' },
                     { name: '科部會 2', url: 'https://teams.microsoft.com/meet/4627805955372?p=y2GCT6SzB1Nc8egSeq', desc: 'Teams' }
                 ],
                 allowAdd: true 
@@ -417,7 +358,7 @@
             }
         ];
 
-        let appData = defaultData; // 先載入預設，避免畫面空白
+        let appData = defaultData; 
         let roomData = {
             assess: Array(5).fill(null).map(() => ({ am: "空缺", pm: "空缺" })),
             room2: Array(5).fill(null).map(() => ({ am: "空缺", pm: "空缺" })),
@@ -425,11 +366,11 @@
         };
         let calendarNote = "";
         let rosterData = { leave: "", remark: "" };
+        let todayQuoteFromServer = "載入中..."; 
 
         // --- ☁️ 雲端讀取與儲存核心 ---
 
         function loadDataCloud() {
-            // 顯示讀取中狀態 (可選：在標題旁顯示 Loading...)
             document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
 
             fetch(API_URL + "?action=read&password=" + MY_SECRET_PASS)
@@ -440,62 +381,46 @@
                     if(res.data.roomData) roomData = res.data.roomData;
                     if(res.data.rosterData) rosterData = res.data.rosterData;
                     if(res.data.calendarNote) calendarNote = res.data.calendarNote;
+                    if(res.data.todayQuote) todayQuoteFromServer = res.data.todayQuote;
                     console.log("雲端資料同步完成");
                 } else {
                     console.error("同步失敗: " + res.message);
                 }
-                updateUI(); // 讀取完畢刷新畫面
+                updateUI(); 
             })
             .catch(err => {
                 console.error("連線錯誤", err);
-                updateUI(); // 即使錯誤也刷新，至少顯示預設值
+                updateUI(); 
             });
         }
 
         function sendToCloud(type, dataObj) {
-            // 使用 sendBeacon 或 fetch post
             const payload = JSON.stringify(dataObj);
-            // 這裡為了簡單使用 fetch POST text/plain 避免 CORS preflight 問題
             fetch(API_URL + "?password=" + MY_SECRET_PASS + "&action=write&type=" + type, {
                 method: "POST",
                 body: payload
             }).then(() => console.log(type + " Saved to Cloud"));
         }
 
-        // 修改原本的存檔函式，改為上傳雲端
-        function saveData() { 
-            sendToCloud('main', appData); 
-            renderCards(); 
-        }
-        function saveRoom() { 
-            sendToCloud('room', roomData); 
-            updateUnusedDisplay(); 
-        }
-        function saveCal(val) { 
-            calendarNote = val; 
-            sendToCloud('cal', val); 
-        }
-        function saveRoster() { 
-            sendToCloud('roster', rosterData); 
-        }
+        function saveData() { sendToCloud('main', appData); renderCards(); }
+        function saveRoom() { sendToCloud('room', roomData); updateUnusedDisplay(); }
+        function saveCal(val) { calendarNote = val; sendToCloud('cal', val); }
+        function saveRoster() { sendToCloud('roster', rosterData); }
 
-        // --- 畫面渲染與邏輯 (維持不變) ---
+        // --- 畫面渲染與邏輯 ---
         
         function updateUI() {
-            // 更新日期 + 語錄
             const today = new Date();
             const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
-            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-            document.getElementById('daily-quote').innerText = `${dateStr} — ${randomQuote}`;
-
+            const displayQuote = todayQuoteFromServer === "載入中..." ? "日日是好日" : todayQuoteFromServer;
+            document.getElementById('daily-quote').innerText = `${dateStr} — ${displayQuote}`;
             renderCards();
         }
 
-       function renderCards() {
+        function renderCards() {
             const container = document.getElementById('cardContainer');
             container.innerHTML = '';
 
-            // ★ 關鍵新增：每次重新渲染時，也順便更新 Modal 裡面的文字，確保資料一致
             if(document.getElementById('leave-display-text')) {
                 document.getElementById('leave-display-text').innerText = rosterData.leave || "無";
             }
@@ -511,30 +436,22 @@
                 if (card.specialContent === 'room-ui') {
                     contentHtml = generateRoomUI();
                 } 
-            else if (card.specialContent === 'calendar-ui') {
-                    // 修改版：將黃色區塊變成可編輯的同步佈告欄
-                    // 我們直接把 calendarNote (行事曆備註) 顯示在黃色框框裡
+                else if (card.specialContent === 'calendar-ui') {
                     contentHtml = `
                         <div style="background:#FFF9C4; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #FBC02D;">
                             <strong style="color:#AF601A; display:block; margin-bottom:5px;">🔥 今日重點 / 公告</strong>
-                            
                             <textarea style="width:100%; background:transparent; border:none; resize:none; font-family:inherit; font-size:0.95rem; line-height:1.5; height:80px; outline:none;" 
                                 placeholder="點擊此處輸入今日重點..." 
                                 onchange="saveCal(this.value)" 
                                 onclick="event.stopPropagation()">${calendarNote}</textarea>
                         </div>
-
                         <a href="https://calendar.google.com/calendar/embed?src=chimeiotr%40gmail.com&ctz=Asia%2FTaipei" target="_blank" class="btn" style="border-left:4px solid var(--twilight-blue);">
                             <div>查看完整月曆<small>Google Calendar</small></div>
                         </a>
-                        
                         <p style="font-size:0.8rem; color:#888; text-align:center;">* 上方黃色區域輸入文字後，點擊旁邊即可自動儲存同步</p>
                     `;
                 }
                 else if (card.specialContent === 'roster-ui') {
-                    // ★ 注意下面這一段 input 的寫法 ★
-                    // oninput 事件裡，我多加了一句：document.getElementById('leave-display-text').innerText = this.value
-                    // 這就是「即時連動」的魔法
                     contentHtml = `
                         <label class="input-label">🚑 今日請假人員</label>
                         <input type="text" class="modal-input" style="margin:0;" 
@@ -585,12 +502,12 @@
             });
             updateUnusedDisplay();
         }
+
         // --- 空間管理 UI ---
         function generateRoomUI() {
             const mkSel = (roomKey, dayIdx, timeKey) => {
                 let currentVal = roomData[roomKey][dayIdx][timeKey];
                 let opts = roomOptions.map(o => `<option value="${o}" ${o===currentVal?'selected':''}>${o}</option>`).join('');
-                // 改用 onchange (選完才上傳，比較省流量)
                 return `<select class="schedule-select" onchange="updateRoomData('${roomKey}', ${dayIdx}, '${timeKey}', this.value)">${opts}</select>`;
             };
 
@@ -623,7 +540,7 @@
 
         window.updateRoomData = function(roomKey, dayIdx, timeKey, value) {
             roomData[roomKey][dayIdx][timeKey] = value;
-            saveRoom(); // 儲存並更新
+            saveRoom(); 
         };
 
         function updateUnusedDisplay() {
@@ -725,15 +642,6 @@
                 content.style.maxHeight = null;
             }
         }
-
-        // 注意：這裡不呼叫 loadData()，而是由密碼檢查通過後呼叫 loadDataCloud()
-        updateUI(); 
-
     </script>
 </body>
-
 </html>
-
-
-
-
