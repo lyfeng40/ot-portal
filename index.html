@@ -261,20 +261,38 @@
                 urlGroup.style.display = 'block';
             }
         }
-        // ★ 新增：這是前端將資料寫入後端 Config_Links 的關鍵函式
+// ★ 修正後的存檔函式 (解決純文字無法存檔問題)
         window.saveNewItem = function() {
             const selectVal = document.getElementById('new-card-select').value;
+            const itemType = document.getElementById('new-item-type').value; 
             const name = document.getElementById('new-link-name').value;
-            const url = document.getElementById('new-link-url').value;
+            let url = document.getElementById('new-link-url').value; // 這裡用 let，因為後面可能會改
             const desc = document.getElementById('new-link-desc').value;
 
-            if(!name || !url) { alert('請至少輸入名稱和網址'); return; }
+            // 1. 先處理邏輯：如果是備註，強制把網址設為 #text (這樣就能通過檢查)
+            if (itemType === 'memo') {
+                url = '#text'; 
+            }
 
+            // 2. 再進行驗證
+            if(!name) { 
+                alert('請輸入標題'); 
+                return; 
+            }
+            
+            // 只有當類型是「連結」且網址是空的時候，才擋下來
+            if(itemType === 'link' && !url) { 
+                alert('請輸入網址'); 
+                return; 
+            }
+
+            // 3. 準備打包資料
             let newLinkData = {
                 id: '', title: '', type: 'custom',
                 name: name, url: url, desc: desc
             };
 
+            // 4. 判斷加入位置
             if (selectVal === 'new_card') {
                 const newTitle = document.getElementById('new-card-title').value || '新分類';
                 newLinkData.id = 'custom_' + Date.now();
@@ -288,25 +306,33 @@
                 }
             }
 
+            // 5. 按鈕狀態改變
             const btn = document.querySelector('#add-modal .modal-btn:last-child');
             const originalText = btn.innerText;
             btn.innerText = "寫入雲端中...";
             btn.disabled = true;
 
-            // 送出 addLink 請求
-            fetch(API_URL + "?password=" + MY_SECRET_PASS + "&action=write&type=addLink", {
+            // 6. 發送
+            fetch(API_URL + "?password=" + (typeof CURRENT_USER_PASS !== 'undefined' ? CURRENT_USER_PASS : "8888") + "&action=write&type=addLink", {
                 method: "POST",
                 body: JSON.stringify(newLinkData)
             })
             .then(res => res.json())
             .then(response => {
                 if(response.status === 'success') {
-                    alert("✅ 成功！資料已寫入 Google Sheet，網頁將重新整理。");
+                    alert("✅ 成功！資料已寫入");
                     closeAddModal();
+                    
+                    // 清空欄位
                     document.getElementById('new-link-name').value = '';
                     document.getElementById('new-link-url').value = '';
                     document.getElementById('new-link-desc').value = '';
-                    loadDataCloud(); // 重新讀取，讓新連結出現
+                    
+                    // 重置為連結模式
+                    document.getElementById('new-item-type').value = 'link';
+                    toggleUrlInput(); 
+                    
+                    loadDataCloud(); 
                 } else {
                     alert("❌ 寫入失敗");
                 }
@@ -459,4 +485,5 @@
     </script>
 </body>
 </html>
+
 
