@@ -125,25 +125,40 @@
 
     <button class="fab-btn" onclick="openAddModal()">＋</button>
 
-    <div id="add-modal" class="modal">
+<div id="add-modal" class="modal">
         <div class="modal-content">
             <h3 style="color:var(--forest-green); margin-top:0;">新增內容</h3>
+            
             <div id="category-selector-group">
                 <select id="new-card-select" class="modal-input"></select>
             </div>
+            
             <div id="input-new-card-title" style="display:none;">
                 <input type="text" id="new-card-title" placeholder="輸入新卡片標題" class="modal-input">
             </div>
-            <input type="text" id="new-link-name" placeholder="連結名稱 (例如: Zoom會議)" class="modal-input">
-            <input type="text" id="new-link-url" placeholder="網址 (例如: https://...)" class="modal-input">
-            <input type="text" id="new-link-desc" placeholder="備註 (選填)" class="modal-input">
-            <div style="display:flex; justify-content: space-between;">
+
+            <div style="text-align:left; margin-top:10px;">
+                <label class="input-label" style="margin-bottom:5px;">內容類型：</label>
+                <select id="new-item-type" class="modal-input" onchange="toggleUrlInput()" style="margin-top:0;">
+                    <option value="link">🔗 網頁連結 (按鈕)</option>
+                    <option value="memo">📝 純文字備註 (公告)</option>
+                </select>
+            </div>
+
+            <input type="text" id="new-link-name" placeholder="標題 (例如: 會議連結 / 重要公告)" class="modal-input">
+
+            <div id="url-input-group">
+                <input type="text" id="new-link-url" placeholder="網址 (例如: https://...)" class="modal-input">
+            </div>
+
+            <textarea id="new-link-desc" placeholder="詳細內容 / 備註說明 (選填)" class="modal-input" style="height:80px; resize:none; font-family:inherit;"></textarea>
+
+            <div style="display:flex; justify-content: space-between; margin-top:10px;">
                 <button class="modal-btn" style="background:#888;" onclick="closeAddModal()">取消</button>
                 <button class="modal-btn" onclick="saveNewItem()">確定新增</button>
             </div>
         </div>
     </div>
-
     <div id="roster-modal" class="modal">
         <div class="modal-content" style="max-width:600px; width:95%; max-height:90vh; overflow-y:auto;">
             <span style="float:right; cursor:pointer; font-size:1.5rem;" onclick="document.getElementById('roster-modal').style.display='none'">&times;</span>
@@ -235,7 +250,17 @@
         function saveRoom() { sendToCloud('room', roomData); updateUnusedDisplay(); }
         function saveCal(val) { calendarNote = val; sendToCloud('cal', val); }
         function saveRoster() { sendToCloud('roster', rosterData); }
-
+// ★ 新功能：切換輸入框顯示邏輯
+        window.toggleUrlInput = function() {
+            const type = document.getElementById('new-item-type').value;
+            const urlGroup = document.getElementById('url-input-group');
+            // 如果選備註，就隱藏網址框；選連結則顯示
+            if (type === 'memo') {
+                urlGroup.style.display = 'none';
+            } else {
+                urlGroup.style.display = 'block';
+            }
+        }
         // ★ 新增：這是前端將資料寫入後端 Config_Links 的關鍵函式
         window.saveNewItem = function() {
             const selectVal = document.getElementById('new-card-select').value;
@@ -344,7 +369,28 @@
                     `;
                 }
 
-                if (card.links) { card.links.forEach(link => { contentHtml += `<a href="${link.url}" target="_blank" class="btn"><div>${link.name}<small>${link.desc || ''}</small></div><span class="badge">GO</span></a>`; }); }
+               // 修改後的連結渲染邏輯：支援純文字備註
+                if (card.links) { 
+                    card.links.forEach(link => { 
+                        // 如果網址是 #text 或 空白，就渲染成純文字區塊
+                        if (link.url === '#text' || link.url === '') {
+                            contentHtml += `
+                                <div style="padding:10px; background:#f4f4f4; border-radius:6px; margin-bottom:8px; color:#555; font-size:0.9rem; line-height:1.5;">
+                                    <strong>${link.name}</strong><br>
+                                    ${link.desc}
+                                </div>
+                            `;
+                        } else {
+                            // 否則渲染成原本的按鈕
+                            contentHtml += `
+                                <a href="${link.url}" target="_blank" class="btn">
+                                    <div>${link.name}<small>${link.desc || ''}</small></div>
+                                    <span class="badge">GO</span>
+                                </a>
+                            `; 
+                        }
+                    }); 
+                }
                 
                 // ★ 恢復前端新增按鈕 (僅在允許的卡片顯示)
                 if (card.allowAdd) { 
@@ -413,3 +459,4 @@
     </script>
 </body>
 </html>
+
