@@ -328,20 +328,30 @@
             }).finally(() => { btn.innerText = "確定新增"; btn.disabled = false; });
         }
 
-        function updateUI() {
+function updateUI() {
             const today = new Date();
             const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
             const displayQuote = todayQuoteFromServer === "載入中..." ? "日日是好日" : todayQuoteFromServer;
             document.getElementById('daily-quote').innerText = `${dateStr} — ${displayQuote}`;
             
-            // ★ 更新跑馬燈顯示
+            // ★ 修改後的跑馬燈顯示邏輯
             const marqueeBar = document.getElementById('marquee-bar');
             const marqueeTextDiv = document.getElementById('marquee-text');
+            
+            marqueeBar.style.display = 'block'; // 強制顯示
+
             if (marqueeText && marqueeText.trim() !== "") {
-                marqueeBar.style.display = 'block';
+                // 有公告時：顯示紅色緊急樣式
                 marqueeTextDiv.innerText = "📢 " + marqueeText;
+                marqueeBar.style.background = "#FFEBEE";
+                marqueeBar.style.color = "#C62828";
+                marqueeBar.style.border = "1px solid #FFCDD2";
             } else {
-                marqueeBar.style.display = 'none';
+                // 沒公告時：顯示灰色提示樣式 (讓你點擊)
+                marqueeTextDiv.innerText = "📢 (點擊此處新增緊急公告...)";
+                marqueeBar.style.background = "#F5F5F5";
+                marqueeBar.style.color = "#AAA";
+                marqueeBar.style.border = "1px dashed #CCC";
             }
 
             renderCards();
@@ -460,3 +470,4 @@
     </script>
 </body>
 </html>
+
