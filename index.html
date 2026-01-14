@@ -21,9 +21,32 @@
         .login-btn { background: var(--brick-red); color: white; border: none; padding: 10px 30px; font-size: 1rem; border-radius: 6px; cursor: pointer; width: 100%; }
         .error-msg { color: #C62828; margin-top: 15px; font-size: 0.9rem; display: none; }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } 100% { transform: translateX(0); } }
-        .header { text-align: center; margin-bottom: 40px; padding-top: 30px; }
+        
+        /* Header & Marquee */
+        .header { text-align: center; margin-bottom: 20px; padding-top: 30px; }
         .header h1 { font-family: 'Noto Serif TC', serif; margin: 0; font-size: 2rem; color: var(--forest-green); text-shadow: 2px 2px 0px rgba(255,255,255,0.5); letter-spacing: 3px; }
         .header p { margin: 15px 0 0; font-size: 1rem; color: #6B7A8F; font-style: italic; font-weight: 500; }
+        
+        /* ★ 跑馬燈樣式 */
+        .marquee-container {
+            background: #FFEBEE; border: 1px solid #FFCDD2; color: #C62828;
+            padding: 8px; margin: 15px auto; max-width: 600px; border-radius: 4px;
+            overflow: hidden; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: none; /* 預設隱藏，有內容才顯示 */
+            cursor: pointer;
+        }
+        .marquee-content { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; font-weight: bold; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+
+        /* ★ 搜尋框樣式 */
+        .search-container { text-align: center; margin-bottom: 30px; }
+        .search-input { 
+            padding: 10px 15px; width: 80%; max-width: 400px; font-size: 1rem; 
+            border: 2px solid var(--forest-green); border-radius: 20px; 
+            background: rgba(255,255,255,0.8); outline: none; transition: box-shadow 0.2s;
+        }
+        .search-input:focus { box-shadow: 0 0 0 3px rgba(47, 79, 79, 0.2); }
+
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; padding-bottom: 100px; }
         .card { background: #FDFBF7; border: 2px solid var(--forest-green); border-radius: var(--radius); box-shadow: var(--shadow-retro); transition: transform 0.2s; overflow: hidden; display: flex; flex-direction: column; }
         .card:hover { transform: translate(-2px, -2px); }
@@ -60,7 +83,6 @@
         .unused-tag { background: white; border: 1px solid #A5D6A7; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .remark-area { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #D1D1D1; border-radius: 6px; font-family: inherit; resize: vertical; box-sizing: border-box; background: #FFF; min-height: 60px; }
         .input-label { font-size: 0.85rem; color: #888; display: block; margin-top: 10px; margin-bottom: 4px; font-weight: bold; }
-        /* 筆記卡片樣式 */
         .memo-block { margin-bottom: 15px; }
         .memo-title { font-weight: bold; color: var(--forest-green); display: block; margin-bottom: 5px; }
         .memo-input { width: 100%; min-height: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #fffdf0; font-family: inherit; resize: vertical; }
@@ -75,7 +97,20 @@
             <div id="login-error" class="error-msg">密碼錯誤</div>
         </div>
     </div>
-    <div class="header"><h1>精神醫學部職能治療入口網</h1><p id="daily-quote">Loading...</p></div>
+    
+    <div class="header">
+        <h1>精神醫學部職能治療入口網</h1>
+        <p id="daily-quote">Loading...</p>
+    </div>
+
+    <div id="marquee-bar" class="marquee-container" onclick="editMarquee()">
+        <div class="marquee-content" id="marquee-text">📢 尚無緊急公告</div>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="search-input" class="search-input" placeholder="🔍 搜尋連結..." onkeyup="filterCards()">
+    </div>
+
     <div class="grid" id="cardContainer"></div>
 
     <button class="fab-btn" onclick="openAddModal()">＋</button>
@@ -143,7 +178,7 @@
             if (input) {
                 CURRENT_USER_PASS = input;
                 document.getElementById('daily-quote').innerText = "驗證密碼中...";
-                loadDataCloud(true); // 傳入 true 表示是登入驗證
+                loadDataCloud(true); 
             } else {
                 errorMsg.style.display = "block";
             }
@@ -157,7 +192,8 @@
         let roomData = { assess: Array(5).fill(null).map(() => ({ am: "空缺", pm: "空缺" })), room2: Array(5).fill(null).map(() => ({ am: "空缺", pm: "空缺" })), remark: "" };
         let calendarNote = "";
         let rosterData = { leave: "", remark: "" };
-        let memoData = {}; // ★ 筆記資料
+        let memoData = {}; 
+        let marqueeText = ""; // ★ 跑馬燈資料
         let todayQuoteFromServer = "載入中..."; 
         let calendarEventsFromServer = "正在讀取行事曆..."; 
 
@@ -175,9 +211,11 @@
                     if(res.data.roomData) roomData = res.data.roomData;
                     if(res.data.rosterData) rosterData = res.data.rosterData;
                     if(res.data.calendarNote) calendarNote = res.data.calendarNote;
-                    if(res.data.memoData) memoData = res.data.memoData; // 載入筆記
+                    if(res.data.memoData) memoData = res.data.memoData;
+                    if(res.data.marqueeText) marqueeText = res.data.marqueeText; // ★
                     if(res.data.todayQuote) todayQuoteFromServer = res.data.todayQuote;
                     if(res.data.calendarEvents) calendarEventsFromServer = res.data.calendarEvents;
+                    
                     console.log("資料同步完成");
                     updateUI(); 
                 } else {
@@ -185,8 +223,6 @@
                         document.getElementById("login-error").innerText = "密碼錯誤";
                         document.getElementById("login-error").style.display = "block";
                         document.getElementById('daily-quote').innerText = "請登入";
-                    } else {
-                        console.error("同步失敗");
                     }
                 }
             })
@@ -203,18 +239,48 @@
         function saveCal(val) { calendarNote = val; sendToCloud('cal', val); }
         function saveRoster() { sendToCloud('roster', rosterData); }
         function saveMemo(id, val) { 
-            memoData[id] = val; // 更新本地
-            sendToCloud('memo', memoData); // 傳送全部筆記
+            memoData[id] = val; 
+            sendToCloud('memo', memoData); 
+        }
+        function saveMarquee(val) { // ★ 儲存跑馬燈
+            marqueeText = val;
+            sendToCloud('marquee', val);
+            updateUI();
         }
 
-        // 新增項目的邏輯
+        // ★ 編輯跑馬燈 (點擊觸發)
+        window.editMarquee = function() {
+            const newText = prompt("請輸入緊急公告內容 (留空則隱藏)：", marqueeText);
+            if (newText !== null) {
+                saveMarquee(newText);
+            }
+        }
+
+        // ★ 搜尋過濾功能
+        window.filterCards = function() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const cards = document.querySelectorAll('.card');
+            
+            cards.forEach(card => {
+                const title = card.querySelector('.card-title').innerText.toLowerCase();
+                const content = card.querySelector('.card-content').innerText.toLowerCase();
+                
+                // 搜尋標題或內容
+                if (title.includes(query) || content.includes(query)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
         window.toggleUrlInput = function() {
             const type = document.getElementById('new-item-type').value;
             const urlGroup = document.getElementById('url-input-group');
             if (type === 'link') {
                 urlGroup.style.display = 'block';
             } else {
-                urlGroup.style.display = 'none'; // 筆記或公告都不需要網址
+                urlGroup.style.display = 'none'; 
             }
         }
 
@@ -225,9 +291,8 @@
             let url = document.getElementById('new-link-url').value;
             const desc = document.getElementById('new-link-desc').value;
 
-            // 邏輯判斷
             if (itemType === 'memo') { url = '#text'; } 
-            else if (itemType === 'editable_memo') { url = '#memo'; } // 特殊標記
+            else if (itemType === 'editable_memo') { url = '#memo'; } 
 
             if(!name) { alert('請輸入標題'); return; }
             if(itemType === 'link' && !url) { alert('請輸入網址'); return; }
@@ -268,6 +333,17 @@
             const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
             const displayQuote = todayQuoteFromServer === "載入中..." ? "日日是好日" : todayQuoteFromServer;
             document.getElementById('daily-quote').innerText = `${dateStr} — ${displayQuote}`;
+            
+            // ★ 更新跑馬燈顯示
+            const marqueeBar = document.getElementById('marquee-bar');
+            const marqueeTextDiv = document.getElementById('marquee-text');
+            if (marqueeText && marqueeText.trim() !== "") {
+                marqueeBar.style.display = 'block';
+                marqueeTextDiv.innerText = "📢 " + marqueeText;
+            } else {
+                marqueeBar.style.display = 'none';
+            }
+
             renderCards();
         }
 
@@ -307,15 +383,12 @@
 
                 if (card.links) { 
                     card.links.forEach((link, idx) => { 
-                        // 1. 純文字公告 (#text)
                         if (link.url === '#text' || link.url === '') {
                             contentHtml += `<div style="padding:10px; background:#f4f4f4; border-radius:6px; margin-bottom:8px; color:#555;"><strong>${link.name}</strong><br>${link.desc}</div>`;
                         } 
-                        // 2. ★ 可編輯筆記 (#memo) - 這是新功能
                         else if (link.url === '#memo') {
-                            // 產生一個唯一 key，組合卡片ID+索引，確保不重複
                             const memoKey = card.id + '_memo_' + idx; 
-                            const memoValue = memoData[memoKey] || ""; // 從資料庫讀值
+                            const memoValue = memoData[memoKey] || ""; 
                             contentHtml += `
                                 <div class="memo-block" onclick="event.stopPropagation()">
                                     <label class="memo-title">✍️ ${link.name}</label>
@@ -323,7 +396,6 @@
                                 </div>
                             `;
                         }
-                        // 3. 一般連結
                         else {
                             contentHtml += `<a href="${link.url}" target="_blank" class="btn"><div>${link.name}<small>${link.desc || ''}</small></div><span class="badge">GO</span></a>`; 
                         }
