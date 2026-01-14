@@ -35,7 +35,6 @@
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
         }
 
-        /* Login Overlay */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--forest-green);
@@ -54,12 +53,10 @@
         .error-msg { color: #C62828; margin-top: 15px; font-size: 0.9rem; display: none; }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } 100% { transform: translateX(0); } }
 
-        /* Header */
         .header { text-align: center; margin-bottom: 40px; padding-top: 30px; }
         .header h1 { font-family: 'Noto Serif TC', serif; margin: 0; font-size: 2rem; color: var(--forest-green); text-shadow: 2px 2px 0px rgba(255,255,255,0.5); letter-spacing: 3px; }
         .header p { margin: 15px 0 0; font-size: 1rem; color: #6B7A8F; font-style: italic; font-weight: 500; }
 
-        /* Grid & Cards */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; padding-bottom: 100px; }
         .card { background: #FDFBF7; border: 2px solid var(--forest-green); border-radius: var(--radius); box-shadow: var(--shadow-retro); transition: transform 0.2s; overflow: hidden; display: flex; flex-direction: column; }
         .card:hover { transform: translate(-2px, -2px); }
@@ -88,13 +85,11 @@
         .fab-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--brick-red); color: white; border-radius: 50%; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-size: 30px; cursor: pointer; z-index: 100; transition: transform 0.2s; }
         .fab-btn:hover { transform: scale(1.1) rotate(90deg); }
 
-        /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.7); backdrop-filter: blur(2px); justify-content: center; align-items: center; z-index: 1001; }
         .modal-content { background: #FDFBF7; padding: 25px; border-radius: 12px; width: 320px; border: 2px solid var(--forest-green); text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         .modal-btn { padding: 8px 20px; background: var(--forest-green); color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
 
-        /* Room & Schedule Styles */
         .room-section { margin-bottom: 25px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;}
         .room-section h3 { margin: 0 0 10px 0; color: var(--brick-red); font-size: 1rem; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         .schedule-grid { display: grid; grid-template-columns: 40px repeat(5, 1fr); gap: 5px; font-size: 0.8rem; align-items: center; }
@@ -194,78 +189,41 @@
         }
         document.getElementById("site-password").addEventListener("keypress", function(event) { if (event.key === "Enter") checkPassword(); });
 
-        // --- 資料變數 ---
         const roomOptions = ["空缺", "成癮", "學生", "急性", "ICF", "身心障礙鑑定", "桌遊", "志工", "其他"];
         const days = ["一", "二", "三", "四", "五"];
         
-        // ★★★ 修正點：這裡已恢復原本的連結 ★★★
-        const defaultData = [
-            { 
-                id: 'meeting', title: '📅 常見會議連結', type: 'meeting', 
-                links: [
-                    { name: '全院演講 1', url: 'http://10.1.66.102/', desc: '限院內' },
-                    { name: '全院演講 2', url: 'http://10.1.65.103/', desc: '限院內' },
-                    { name: '科部會 1', url: 'https://teams.microsoft.com/meet/42119309728124?p=eil55gYfm2J6vitzer', desc: 'Teams' },
-                    { name: '科部會 2', url: 'https://teams.microsoft.com/meet/4627805955372?p=y2GCT6SzB1Nc8egSeq', desc: 'Teams' }
-                ],
-                allowAdd: true 
-            },
-            { id: 'calendar', title: '🔔 行事曆重點', type: 'calendar', specialContent: 'calendar-ui' },
-            { id: 'room', title: '🏥 空間使用狀態', type: 'room', specialContent: 'room-ui' },
-            { id: 'roster', title: '📋 排班表', type: 'custom', specialContent: 'roster-ui' },
-            { 
-                id: 'slowrun', title: '🏃 超慢跑活動', type: 'custom', 
-                links: [
-                    { name: '數學版', url: 'https://lyfeng40.github.io/slowrun-activity/', desc: '認知' },
-                    { name: '生活題庫', url: 'https://lyfeng40.github.io/slowrun-activity/life-quiz', desc: '生活' },
-                    { name: '叫色版', url: 'https://lyfeng40.github.io/slowrun-activity/stroop', desc: '叫色' }
-                ],
-                allowAdd: true 
-            }
-        ];
-
-        let appData = defaultData; 
+        // 預設資料 (用來撐場面，等雲端資料下載)
+        let appData = [
+            { id: 'loading', title: '⏳ 資料讀取中...', type: 'custom', links: [] }
+        ]; 
         let roomData = { assess: Array(5).fill(null).map(() => ({ am: "空缺", pm: "空缺" })), room2: Array(5).fill(null).map(() => ({ am: "空缺", pm: "空缺" })), remark: "" };
         let calendarNote = "";
         let rosterData = { leave: "", remark: "" };
         let todayQuoteFromServer = "載入中..."; 
         let calendarEventsFromServer = "正在讀取行事曆..."; 
 
-        // --- ☁️ 雲端讀取 ---
         function loadDataCloud() {
             document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
             fetch(API_URL + "?action=read&password=" + MY_SECRET_PASS)
             .then(res => res.json())
             .then(res => {
                 if(res.status === 'success') {
-                    // ★ 修正邏輯：如果雲端回傳的連結是空的（因為之前的錯誤覆蓋），我們使用 defaultData
-                    if(res.data.appData) {
-                        // 檢查雲端的 meeting 連結是否為空，如果是，則保留 defaultData
-                        const cloudMeeting = res.data.appData.find(c => c.id === 'meeting');
-                        const defaultMeeting = defaultData.find(c => c.id === 'meeting');
-                        
-                        if (cloudMeeting && (!cloudMeeting.links || cloudMeeting.links.length === 0)) {
-                             // 如果雲端沒連結，就用預設的
-                             console.log("偵測到雲端連結遺失，使用預設值修復");
-                        } else {
-                            // 否則使用雲端的
-                            appData = res.data.appData;
-                        }
-                    }
-                    
+                    if(res.data.appData && res.data.appData.length > 0) appData = res.data.appData;
                     if(res.data.roomData) roomData = res.data.roomData;
                     if(res.data.rosterData) rosterData = res.data.rosterData;
                     if(res.data.calendarNote) calendarNote = res.data.calendarNote;
                     if(res.data.todayQuote) todayQuoteFromServer = res.data.todayQuote;
                     if(res.data.calendarEvents) calendarEventsFromServer = res.data.calendarEvents;
-                    
                     console.log("雲端資料同步完成");
                 } else {
                     console.error("同步失敗: " + res.message);
                 }
                 updateUI(); 
             })
-            .catch(err => { console.error("連線錯誤", err); updateUI(); });
+            .catch(err => { 
+                console.error("連線錯誤", err); 
+                document.getElementById('daily-quote').innerText = "⚠️ 離線模式 / 連線失敗";
+            });
         }
 
         function sendToCloud(type, dataObj) {
@@ -274,10 +232,63 @@
             }).then(() => console.log(type + " Saved"));
         }
 
-        function saveData() { sendToCloud('main', appData); renderCards(); }
         function saveRoom() { sendToCloud('room', roomData); updateUnusedDisplay(); }
         function saveCal(val) { calendarNote = val; sendToCloud('cal', val); }
         function saveRoster() { sendToCloud('roster', rosterData); }
+
+        // ★ 新增：這是前端將資料寫入後端 Config_Links 的關鍵函式
+        window.saveNewItem = function() {
+            const selectVal = document.getElementById('new-card-select').value;
+            const name = document.getElementById('new-link-name').value;
+            const url = document.getElementById('new-link-url').value;
+            const desc = document.getElementById('new-link-desc').value;
+
+            if(!name || !url) { alert('請至少輸入名稱和網址'); return; }
+
+            let newLinkData = {
+                id: '', title: '', type: 'custom',
+                name: name, url: url, desc: desc
+            };
+
+            if (selectVal === 'new_card') {
+                const newTitle = document.getElementById('new-card-title').value || '新分類';
+                newLinkData.id = 'custom_' + Date.now();
+                newLinkData.title = newTitle;
+            } else {
+                const targetCard = appData.find(c => c.id === selectVal);
+                if (targetCard) {
+                    newLinkData.id = targetCard.id;
+                    newLinkData.title = targetCard.title;
+                    newLinkData.type = targetCard.type;
+                }
+            }
+
+            const btn = document.querySelector('#add-modal .modal-btn:last-child');
+            const originalText = btn.innerText;
+            btn.innerText = "寫入雲端中...";
+            btn.disabled = true;
+
+            // 送出 addLink 請求
+            fetch(API_URL + "?password=" + MY_SECRET_PASS + "&action=write&type=addLink", {
+                method: "POST",
+                body: JSON.stringify(newLinkData)
+            })
+            .then(res => res.json())
+            .then(response => {
+                if(response.status === 'success') {
+                    alert("✅ 成功！資料已寫入 Google Sheet，網頁將重新整理。");
+                    closeAddModal();
+                    document.getElementById('new-link-name').value = '';
+                    document.getElementById('new-link-url').value = '';
+                    document.getElementById('new-link-desc').value = '';
+                    loadDataCloud(); // 重新讀取，讓新連結出現
+                } else {
+                    alert("❌ 寫入失敗");
+                }
+            })
+            .catch(err => { alert("連線錯誤：" + err); })
+            .finally(() => { btn.innerText = originalText; btn.disabled = false; });
+        }
 
         function updateUI() {
             const today = new Date();
@@ -316,13 +327,8 @@
                                 ${calendarEventsFromServer}
                             </div>
                         </div>
-
                         <label class="input-label">📝 手動補充備註 / 公告</label>
-                        <textarea class="remark-area" 
-                            placeholder="可在此輸入其他公告..." 
-                            onchange="saveCal(this.value)" 
-                            onclick="event.stopPropagation()">${calendarNote}</textarea>
-
+                        <textarea class="remark-area" placeholder="可在此輸入其他公告..." onchange="saveCal(this.value)" onclick="event.stopPropagation()">${calendarNote}</textarea>
                         <a href="https://calendar.google.com/calendar/embed?src=chimeiotr%40gmail.com&ctz=Asia%2FTaipei" target="_blank" class="btn" style="border-left:4px solid var(--twilight-blue); margin-top:10px;">
                             <div>查看完整月曆<small>Google Calendar</small></div>
                         </a>
@@ -339,7 +345,11 @@
                 }
 
                 if (card.links) { card.links.forEach(link => { contentHtml += `<a href="${link.url}" target="_blank" class="btn"><div>${link.name}<small>${link.desc || ''}</small></div><span class="badge">GO</span></a>`; }); }
-                if (card.allowAdd) { contentHtml += `<div class="inline-add-btn" onclick="event.stopPropagation(); openAddModal('${card.id}')">+ 新增連結至此卡片</div>`; }
+                
+                // ★ 恢復前端新增按鈕 (僅在允許的卡片顯示)
+                if (card.allowAdd) { 
+                    contentHtml += `<div class="inline-add-btn" onclick="event.stopPropagation(); openAddModal('${card.id}')">+ 新增連結至此卡片</div>`; 
+                }
 
                 cardDiv.innerHTML = `<div class="card-header"><span class="card-title">${card.title}</span><span class="toggle-icon">▼</span></div><div class="card-content"><div class="content-inner">${contentHtml}</div></div>`;
                 container.appendChild(cardDiv);
@@ -384,17 +394,17 @@
         }
         window.closeAddModal = function() { document.getElementById('add-modal').style.display = 'none'; }
         document.getElementById('new-card-select').addEventListener('change', function() { document.getElementById('input-new-card-title').style.display = (this.value === 'new_card') ? 'block' : 'none'; });
+        
         function updateSelectOptions() {
             const select = document.getElementById('new-card-select'); select.innerHTML = '<option value="new_card">✨ 建立一張全新卡片</option>';
-            appData.forEach(card => { if (!['room','calendar','roster'].includes(card.specialContent)) { const opt = document.createElement('option'); opt.value = card.id; opt.text = `加入至「${card.title}」`; select.insertBefore(opt, select.firstChild); } });
+            appData.forEach(card => { 
+                // 排除特殊卡片，只列出可新增連結的卡片
+                if (card.allowAdd) { 
+                    const opt = document.createElement('option'); opt.value = card.id; opt.text = `加入至「${card.title}」`; select.insertBefore(opt, select.firstChild); 
+                } 
+            });
         }
-        window.saveNewItem = function() {
-            const selectVal = document.getElementById('new-card-select').value; const name = document.getElementById('new-link-name').value; const url = document.getElementById('new-link-url').value; const desc = document.getElementById('new-link-desc').value;
-            if(!name || !url) { alert('請至少輸入名稱和網址'); return; }
-            if (selectVal === 'new_card') { const title = document.getElementById('new-card-title').value || '新分類'; appData.push({ id: 'custom_' + Date.now(), title: title, type: 'custom', links: [{ name, url, desc }], allowAdd: true }); }
-            else { const card = appData.find(c => c.id === selectVal); if (card) { if (!card.links) card.links = []; card.links.push({ name, url, desc }); } }
-            saveData(); closeAddModal(); document.getElementById('new-link-name').value = ''; document.getElementById('new-link-url').value = ''; document.getElementById('new-link-desc').value = '';
-        }
+
         function toggleCard(card, event) {
             if(event.target.closest('select') || event.target.closest('textarea') || event.target.closest('input') || event.target.closest('a') || event.target.closest('.inline-add-btn') || event.target.closest('.room-section')) { return; }
             const content = card.querySelector('.card-content'); const isActive = card.classList.contains('active');
