@@ -10,6 +10,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>精神醫學部職能治療入口網</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -199,16 +202,21 @@
         let calendarEventsFromServer = "正在讀取行事曆..."; 
 
 function loadDataCloud(isLogin = false) {
-            document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
-            
-            fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "read",
-                    password: CURRENT_USER_PASS
-                })
-            })
-            .then(res => res.json())
+    document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
+    
+    // ★ 修改點：加上 "?t=" + 當下時間，騙過瀏覽器的快取機制
+    // 原本是：fetch(API_URL, { ...
+    const noCacheUrl = API_URL + "?t=" + new Date().getTime();
+
+    fetch(noCacheUrl, {
+        method: "POST",
+        body: JSON.stringify({
+            action: "read",
+            password: CURRENT_USER_PASS
+        })
+    })
+    .then(res => res.json())
+    // ... (後面程式碼都不用動)
             .then(res => {
                 // ★★★ 真相偵測器 (請在 Console 查看這個) ★★★
                 console.log("🔥 後端回傳的完整資料包：", res); 
@@ -522,6 +530,7 @@ function updateUI() {
     </script>
 </body>
 </html>
+
 
 
 
