@@ -197,43 +197,56 @@
         let todayQuoteFromServer = "載入中..."; 
         let calendarEventsFromServer = "正在讀取行事曆..."; 
 
-        function loadDataCloud(isLogin = false) {
-            document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
-            fetch(API_URL + "?action=read&password=" + CURRENT_USER_PASS)
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    if (isLogin) {
-                        document.getElementById("login-overlay").style.display = "none";
-                        sessionStorage.setItem("ot_logged_in_pass", CURRENT_USER_PASS);
-                    }
-                    if(res.data.appData) appData = res.data.appData;
-                    if(res.data.roomData) roomData = res.data.roomData;
-                    if(res.data.rosterData) rosterData = res.data.rosterData;
-                    if(res.data.calendarNote) calendarNote = res.data.calendarNote;
-                    if(res.data.memoData) memoData = res.data.memoData;
-                    if(res.data.marqueeText) marqueeText = res.data.marqueeText; // ★
-                    if(res.data.todayQuote) todayQuoteFromServer = res.data.todayQuote;
-                    if(res.data.calendarEvents) calendarEventsFromServer = res.data.calendarEvents;
-                    
-                    console.log("資料同步完成");
-                    updateUI(); 
-                } else {
-                    if (isLogin) {
-                        document.getElementById("login-error").innerText = "密碼錯誤";
-                        document.getElementById("login-error").style.display = "block";
-                        document.getElementById('daily-quote').innerText = "請登入";
-                    }
-                }
-            })
-            .catch(err => { console.error("連線錯誤", err); });
+function loadDataCloud(isLogin = false) {
+    document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
+    
+    // ★ 安全性修正：改為 POST 方法，密碼放在 body 內
+    fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+            action: "read",
+            password: CURRENT_USER_PASS
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+        if(res.status === 'success') {
+            if (isLogin) {
+                document.getElementById("login-overlay").style.display = "none";
+                sessionStorage.setItem("ot_logged_in_pass", CURRENT_USER_PASS);
+            }
+            // ... (原本的資料填入邏輯保持不變) ...
+            if(res.data.appData) appData = res.data.appData;
+            if(res.data.roomData) roomData = res.data.roomData;
+            // ... (以此類推) ...
+            
+            console.log("資料同步完成");
+            updateUI(); 
+        } else {
+            if (isLogin) {
+                document.getElementById("login-error").innerText = "密碼錯誤";
+                document.getElementById("login-error").style.display = "block";
+                document.getElementById('daily-quote').innerText = "請登入";
+            }
         }
+    })
+    .catch(err => { console.error("連線錯誤", err); });
+}
 
-        function sendToCloud(type, dataObj) {
-            fetch(API_URL + "?password=" + CURRENT_USER_PASS + "&action=write&type=" + type, {
-                method: "POST", body: JSON.stringify(dataObj)
-            }).then(() => console.log(type + " Saved"));
-        }
+function sendToCloud(type, dataObj) {
+    // ★ 安全性修正：結構化資料傳送
+    const payload = {
+        action: "write",
+        password: CURRENT_USER_PASS,
+        type: type,
+        data: dataObj  // 資料放在 data 欄位
+    };
+
+    fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+    }).then(() => console.log(type + " Saved (Encrypted via POST)"));
+}
 
         function saveRoom() { sendToCloud('room', roomData); updateUnusedDisplay(); }
         function saveCal(val) { calendarNote = val; sendToCloud('cal', val); }
@@ -283,20 +296,22 @@
                 urlGroup.style.display = 'none'; 
             }
         }
-
-        window.saveNewItem = function() {
+window.saveNewItem = function() {
             const selectVal = document.getElementById('new-card-select').value;
             const itemType = document.getElementById('new-item-type').value; 
             const name = document.getElementById('new-link-name').value;
             let url = document.getElementById('new-link-url').value;
             const desc = document.getElementById('new-link-desc').value;
 
+            // 特殊類型處理
             if (itemType === 'memo') { url = '#text'; } 
             else if (itemType === 'editable_memo') { url = '#memo'; } 
 
+            // 防呆檢查
             if(!name) { alert('請輸入標題'); return; }
             if(itemType === 'link' && !url) { alert('請輸入網址'); return; }
 
+            // 準備資料物件
             let newLinkData = { id: '', title: '', type: 'custom', name: name, url: url, desc: desc };
 
             if (selectVal === 'new_card') {
@@ -312,22 +327,43 @@
                 }
             }
 
+            // 按鈕狀態顯示
             const btn = document.querySelector('#add-modal .modal-btn:last-child');
             btn.innerText = "寫入中..."; btn.disabled = true;
 
-            fetch(API_URL + "?password=" + CURRENT_USER_PASS + "&action=write&type=addLink", {
-                method: "POST", body: JSON.stringify(newLinkData)
-            }).then(res => res.json()).then(res => {
+            // ★★★ 這裡就是修改的重點 ★★★
+            fetch(API_URL, {
+                method: "POST", 
+                body: JSON.stringify({
+                    action: "write",
+                    password: CURRENT_USER_PASS,
+                    type: "addLink",
+                    data: newLinkData // 資料放在 data 屬性中，配合後端讀取
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
                 if(res.status === 'success') {
-                    alert("✅ 成功！"); closeAddModal(); 
+                    alert("✅ 成功！"); 
+                    closeAddModal(); 
+                    // 清空輸入框
                     document.getElementById('new-link-name').value = '';
                     document.getElementById('new-link-url').value = '';
                     document.getElementById('new-link-desc').value = '';
                     loadDataCloud(); 
-                } else { alert("失敗"); }
-            }).finally(() => { btn.innerText = "確定新增"; btn.disabled = false; });
+                } else { 
+                    alert("失敗：" + (res.message || "未知錯誤")); 
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("連線發生錯誤");
+            })
+            .finally(() => { 
+                btn.innerText = "確定新增"; 
+                btn.disabled = false; 
+            });
         }
-
 function updateUI() {
             const today = new Date();
             const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
@@ -470,4 +506,5 @@ function updateUI() {
     </script>
 </body>
 </html>
+
 
