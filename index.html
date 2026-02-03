@@ -364,8 +364,11 @@ window.saveNewItem = function() {
                 btn.disabled = false; 
             });
         }
-// 我們故意改成一個錯誤訊息，這樣就能分辨了
-const displayQuote = todayQuoteFromServer === "載入中..." ? "❌ 前端沒收到資料" : todayQuoteFromServer;
+function updateUI() {
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+            const displayQuote = todayQuoteFromServer === "載入中..." ? "日日是好日" : todayQuoteFromServer;
+            document.getElementById('daily-quote').innerText = `${dateStr} — ${displayQuote}`;
             
             // ★ 修改後的跑馬燈顯示邏輯
             const marqueeBar = document.getElementById('marquee-bar');
@@ -503,6 +506,7 @@ const displayQuote = todayQuoteFromServer === "載入中..." ? "❌ 前端沒收
     </script>
 </body>
 </html>
+
 
 
 
