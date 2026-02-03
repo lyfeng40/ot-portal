@@ -198,40 +198,55 @@
         let calendarEventsFromServer = "正在讀取行事曆..."; 
 
 function loadDataCloud(isLogin = false) {
-    document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
-    
-    // ★ 安全性修正：改為 POST 方法，密碼放在 body 內
-    fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({
-            action: "read",
-            password: CURRENT_USER_PASS
-        })
-    })
-    .then(res => res.json())
-    .then(res => {
-        if(res.status === 'success') {
-            if (isLogin) {
-                document.getElementById("login-overlay").style.display = "none";
-                sessionStorage.setItem("ot_logged_in_pass", CURRENT_USER_PASS);
-            }
-            // ... (原本的資料填入邏輯保持不變) ...
-            if(res.data.appData) appData = res.data.appData;
-            if(res.data.roomData) roomData = res.data.roomData;
-            // ... (以此類推) ...
+            document.getElementById('daily-quote').innerText = "☁️ 資料同步中...";
             
-            console.log("資料同步完成");
-            updateUI(); 
-        } else {
-            if (isLogin) {
-                document.getElementById("login-error").innerText = "密碼錯誤";
-                document.getElementById("login-error").style.display = "block";
-                document.getElementById('daily-quote').innerText = "請登入";
-            }
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "read",
+                    password: CURRENT_USER_PASS
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                // ★★★ 真相偵測器 (請在 Console 查看這個) ★★★
+                console.log("🔥 後端回傳的完整資料包：", res); 
+
+                if(res.status === 'success') {
+                    if (isLogin) {
+                        document.getElementById("login-overlay").style.display = "none";
+                        sessionStorage.setItem("ot_logged_in_pass", CURRENT_USER_PASS);
+                    }
+                    
+                    // 資料填入
+                    if(res.data.appData) appData = res.data.appData;
+                    if(res.data.roomData) roomData = res.data.roomData;
+                    if(res.data.rosterData) rosterData = res.data.rosterData;
+                    if(res.data.calendarNote) calendarNote = res.data.calendarNote;
+                    if(res.data.memoData) memoData = res.data.memoData;
+                    if(res.data.marqueeText) marqueeText = res.data.marqueeText;
+                    
+                    // ★ 這裡加了一個防呆：確保就算沒資料，也不要卡在 "載入中"
+                    if(res.data.todayQuote) {
+                        todayQuoteFromServer = res.data.todayQuote;
+                    } else {
+                        todayQuoteFromServer = "⚠️ 伺服器未回傳名言";
+                    }
+
+                    if(res.data.calendarEvents) calendarEventsFromServer = res.data.calendarEvents;
+                    
+                    console.log("資料同步完成");
+                    updateUI(); 
+                } else {
+                    if (isLogin) {
+                        document.getElementById("login-error").innerText = "密碼錯誤";
+                        document.getElementById("login-error").style.display = "block";
+                        document.getElementById('daily-quote').innerText = "請登入";
+                    }
+                }
+            })
+            .catch(err => { console.error("連線錯誤", err); });
         }
-    })
-    .catch(err => { console.error("連線錯誤", err); });
-}
 
 function sendToCloud(type, dataObj) {
     // ★ 安全性修正：結構化資料傳送
@@ -506,6 +521,7 @@ function updateUI() {
     </script>
 </body>
 </html>
+
 
 
 
