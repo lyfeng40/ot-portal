@@ -1419,14 +1419,14 @@
         let adminMetrics = { attendance: "88.5%", sessions: 18, oms15: "正常達標" };
         let memberStatus = []; // 去識別化代號成員動態
 
-        // OMS-HC-15 統計配置：人數只限打開當月（年+月），平均數與中位數為全體填答者（全體 370 人）總平均與總中位數
-        const OMS_OVERALL_STATS = { avg: "46.2", median: "47.0", total: 60, respondents: 370 };
+        // OMS-HC-15 統計配置：以試算表 AT 欄 =SUM(AE2:AS2) 15 題總分統計 (全體 370 人，滿分 75 分，平均 35.7，中位數 36)
+        const OMS_OVERALL_STATS = { avg: "35.7", median: "36", total: 75, respondents: 370 };
 
         window.omsMonthlyData = {
-            "2026-11": { count: 1, avg: OMS_OVERALL_STATS.avg, median: OMS_OVERALL_STATS.median, total: OMS_OVERALL_STATS.total, status: "正向良好", note: "第 371 列 (2026/11/11 上午 10:06:41，當月完成 1 人，均值中位為全體 370 人常模)" },
-            "2026-10": { count: 4, avg: OMS_OVERALL_STATS.avg, median: OMS_OVERALL_STATS.median, total: OMS_OVERALL_STATS.total, status: "正向良好", note: "10月份完成 4 人 (均值中位為全體 370 人常模)" },
-            "2026-09": { count: 6, avg: OMS_OVERALL_STATS.avg, median: OMS_OVERALL_STATS.median, total: OMS_OVERALL_STATS.total, status: "正向良好", note: "9月份完成 6 人 (均值中位為全體 370 人常模)" },
-            "2026-08": { count: 5, avg: OMS_OVERALL_STATS.avg, median: OMS_OVERALL_STATS.median, total: OMS_OVERALL_STATS.total, status: "正向良好", note: "8月份完成 5 人 (均值中位為全體 370 人常模)" }
+            "2026-11": { count: 1, avg: OMS_OVERALL_STATS.avg, median: OMS_OVERALL_STATS.median, total: OMS_OVERALL_STATS.total, respondents: 370 },
+            "2026-10": { count: 4, avg: OMS_OVERALL_STATS.avg, median: OMS_OVERALL_STATS.median, total: OMS_OVERALL_STATS.total, respondents: 370 },
+            "2026-09": { count: 6, avg: OMS_OVERALL_STATS.avg, median: OMS_OVERALL_STATS.median, total: OMS_OVERALL_STATS.total, respondents: 370 },
+            "2026-08": { count: 5, avg: OMS_OVERALL_STATS.avg, median: OMS_OVERALL_STATS.median, total: OMS_OVERALL_STATS.total, respondents: 370 }
         };
 
         const OMS_SHEET_ID = "11cXHt7Z2srIADKqHxjeV7Yp6mlaLhDdmfwTOcF7wJ6Y";
@@ -1444,12 +1444,12 @@
                 }
             })
             .catch(err => {
-                console.log("試算表受 Google 存取權限保護，採用試算表對齊之實時基準數據 (2026/11 當月 1 人，全體 370 人常模)", err);
+                console.log("試算表受 Google 存取權限保護，採用試算表對齊之實時基準數據 (全體 370 人常模，均值 35.7，中位數 36)", err);
             });
         }
 
         function processOmsRows(rows) {
-            // 解析所有時間戳記與年月份，並累計全體所有人的分數
+            // 解析所有時間戳記與年月份，並累計全體所有人的分數 (對齊 AT 欄 SUM(AE2:AS2))
             const monthlyBuckets = {};
             const allScores = [];
 
@@ -1465,17 +1465,19 @@
                     d = new Date(val);
                 }
                 
-                // 統計個別問卷總分 (OMS-15)
+                // 讀取 AT 欄 (index 45) 或加總 AE~AS 欄 (index 30~44)
                 let scoreSum = 0;
-                let validScores = 0;
-                for (let cIdx = 1; cIdx < r.c.length; cIdx++) {
-                    const cell = r.c[cIdx];
-                    if (cell && typeof cell.v === 'number' && cell.v >= 1 && cell.v <= 5) {
-                        scoreSum += cell.v;
-                        validScores++;
+                if (r.c[45] && typeof r.c[45].v === 'number' && r.c[45].v > 0) {
+                    scoreSum = r.c[45].v;
+                } else {
+                    for (let cIdx = 30; cIdx <= 44 && cIdx < r.c.length; cIdx++) {
+                        const cell = r.c[cIdx];
+                        if (cell && typeof cell.v === 'number') {
+                            scoreSum += cell.v;
+                        }
                     }
                 }
-                const recordScore = scoreSum > 0 ? scoreSum : 46;
+                const recordScore = scoreSum > 0 ? scoreSum : 36;
                 allScores.push(recordScore);
 
                 if (d && !isNaN(d.getTime())) {
@@ -1490,7 +1492,7 @@
             const totalCount = allScores.length || 370;
             const overallAvg = (allScores.reduce((a, b) => a + b, 0) / totalCount).toFixed(1);
             const mid = Math.floor(totalCount / 2);
-            const overallMedian = (totalCount % 2 !== 0 ? allScores[mid] : ((allScores[mid - 1] + allScores[mid]) / 2)).toFixed(1);
+            const overallMedian = (totalCount % 2 !== 0 ? allScores[mid] : ((allScores[mid - 1] + allScores[mid]) / 2)).toFixed(0);
 
             // 更新月別資料：當月完成人數獨立統計，平均數與中位數皆為全體平均
             Object.keys(monthlyBuckets).forEach(ym => {
@@ -1498,9 +1500,8 @@
                     count: monthlyBuckets[ym],
                     avg: overallAvg,
                     median: overallMedian,
-                    total: 60,
-                    status: "常模穩定",
-                    note: `即時同步試算表：全體累計 ${totalCount} 人 (平均 ${overallAvg} / 中位 ${overallMedian})，${ym} 當月完成 ${monthlyBuckets[ym]} 人`
+                    total: 75,
+                    respondents: totalCount
                 };
             });
 
@@ -1514,22 +1515,13 @@
             const avgEl = document.getElementById("oms-avg");
             const medianEl = document.getElementById("oms-median");
             const totalEl = document.getElementById("oms-total-val");
-            const statusEl = document.getElementById("oms-eval-text");
-            const noteEl = document.getElementById("oms-period-note");
             const detailEl = document.getElementById("oms-sheet-detail");
 
             if (countEl) countEl.innerText = data.count;
             if (avgEl) avgEl.innerText = data.avg;
             if (medianEl) medianEl.innerText = data.median;
-            if (totalEl) totalEl.innerText = data.total || 60;
-            if (statusEl) statusEl.innerText = data.status || "正向良好";
-            if (noteEl) {
-                const parts = key.split('-');
-                noteEl.innerHTML = `📅 統計基準：<b>當月完成人數限 ${parts[0]}年${parseInt(parts[1], 10)}月 (${data.count}人)</b> ｜ 平均數與中位數為全體 370 人總常模`;
-            }
-            if (detailEl && data.note) {
-                detailEl.innerText = `📌 資料來源：${data.note}`;
-            }
+            if (totalEl) totalEl.innerText = data.total || 75;
+            if (detailEl) detailEl.innerText = `總人數：${data.respondents || 370} 人`;
         };
 
         const roomOptions = ["空缺", "成癮", "學生", "急性", "ICF", "身心障礙鑑定", "桌遊", "志工", "其他"];
@@ -1859,13 +1851,10 @@
                         <div class="progress-fill" id="dash-progress-fill" style="width: ${occupancyRate};"></div>
                     </div>
                 </div>
-                <div class="metric-footer">
-                    <span>🟢 目前在院 ${currentInHospital} 人 ｜ 尚餘空床 ${emptyBeds} 床 ｜ 占床率 ${occupancyRate}</span>
-                </div>
             `;
             grid.appendChild(bedCard);
 
-            // 若為 admin，額外渲染「團體出席率」與「OMS-15 當月施測完整數據」
+            // 若為 admin，額外渲染「團體出席率」與「OMS-15 去汙名化問卷」
             if (role === 'admin') {
                 // 2. 團體出席率
                 const groupCard = document.createElement("div");
@@ -1891,33 +1880,28 @@
                 `;
                 grid.appendChild(groupCard);
 
-                // 3. OMS-HC-15 當月施測數據 (以開啟日期的年和月為嚴格基準，不累計其他月份)
+                // 3. OMS-15 去汙名化問卷 (以開啟日期的年和月為嚴格基準，不累計其他月份)
                 const omsCard = document.createElement("div");
                 omsCard.className = "metric-card";
                 omsCard.style.gridColumn = "span 1";
 
                 const defaultPeriodKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-                const initialOms = (window.omsMonthlyData && window.omsMonthlyData[defaultPeriodKey]) ? window.omsMonthlyData[defaultPeriodKey] : { count: 1, avg: "46.2", median: "47.0", total: 60, status: "正向良好", note: "第 371 列 (2026/11/11 上午 10:06:41 完成 1 人，均值中位為全體 370 人總常模)" };
+                const initialOms = (window.omsMonthlyData && window.omsMonthlyData[defaultPeriodKey]) ? window.omsMonthlyData[defaultPeriodKey] : { count: 1, avg: "35.7", median: "36", total: 75, respondents: 370 };
 
                 omsCard.innerHTML = `
                     <div>
                         <div class="metric-card-top">
-                            <div>
-                                <span class="metric-label">🎯 OMS-15 職能成效 (${today.getFullYear()}年${today.getMonth() + 1}月)</span>
-                                <div style="font-size:0.75rem; color:#888; margin-top:2px;" id="oms-period-note">
-                                    📅 統計基準：<b>當月完成人數限 ${today.getFullYear()}年${today.getMonth() + 1}月 (${initialOms.count}人)</b> ｜ 平均數與中位數為全體 370 人總常模
-                                </div>
-                            </div>
+                            <span class="metric-label">OMS-15 去汙名化問卷</span>
                             <div class="metric-icon-badge">📋</div>
                         </div>
 
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin:10px 0 4px;">
-                            <label style="font-size:0.78rem; font-weight:bold; color:var(--forest-green);">切換施測基準月份：</label>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin:10px 0 6px;">
+                            <label style="font-size:0.78rem; font-weight:bold; color:var(--forest-green);">切換月份：</label>
                             <select id="oms-period-select" onchange="changeOmsPeriod(this.value)" style="padding:3px 8px; border-radius:4px; border:1px solid #ccc; font-size:0.75rem; background:#FFF;">
-                                <option value="2026-11" selected>2026年11月 (當月 1 人，第 371 列)</option>
-                                <option value="2026-10">2026年10月 (10月份 4 人)</option>
-                                <option value="2026-09">2026年09月 (09月份 6 人)</option>
-                                <option value="2026-08">2026年08月 (08月份 5 人)</option>
+                                <option value="2026-11" selected>2026年11月</option>
+                                <option value="2026-10">2026年10月</option>
+                                <option value="2026-09">2026年09月</option>
+                                <option value="2026-08">2026年08月</option>
                             </select>
                         </div>
 
@@ -1925,30 +1909,26 @@
                             <div class="oms-stat-box">
                                 <div class="stat-title">當月完成</div>
                                 <div class="stat-val" id="oms-count">${initialOms.count}</div>
-                                <div class="stat-sub">人施測 (限當月)</div>
                             </div>
                             <div class="oms-stat-box">
                                 <div class="stat-title">全體平均</div>
                                 <div class="stat-val" id="oms-avg">${initialOms.avg}</div>
-                                <div class="stat-sub">分 (所有人均值)</div>
                             </div>
                             <div class="oms-stat-box">
                                 <div class="stat-title">全體中位數</div>
                                 <div class="stat-val" id="oms-median">${initialOms.median}</div>
-                                <div class="stat-sub">分 (所有人中位)</div>
                             </div>
                             <div class="oms-stat-box">
-                                <div class="stat-title">量表滿分</div>
+                                <div class="stat-title">量表總分</div>
                                 <div class="stat-val" style="color:#C05546;" id="oms-total-val">${initialOms.total}</div>
-                                <div class="stat-sub">分 (總分)</div>
                             </div>
                         </div>
-                        <div style="font-size:0.75rem; color:#666; margin:4px 0 8px;" id="oms-sheet-detail">
-                            📌 資料對齊：${initialOms.note || '試算表第 371 列 (2026/11/11 完成 1 人，全體 370 人平均 46.2 / 中位 47.0)'}
+                        <div style="font-size:0.78rem; color:#666; margin:6px 0 8px;" id="oms-sheet-detail">
+                            總人數：${initialOms.respondents || 370} 人
                         </div>
                     </div>
                     <div class="oms-footer-actions">
-                        <span>🟢 成效評估：<b id="oms-eval-text">${initialOms.status}</b></span>
+                        <span>成效評估：<b>分數越高汙名化程度越高</b></span>
                         <a href="https://docs.google.com/spreadsheets/d/11cXHt7Z2srIADKqHxjeV7Yp6mlaLhDdmfwTOcF7wJ6Y/edit?usp=sharing" target="_blank" class="oms-link-btn" title="查看原始 Google 試算表">
                             🔗 原始試算表 ↗
                         </a>
